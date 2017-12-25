@@ -1,0 +1,42 @@
+@ tests/Test1.java 2 15 parentStart=true rightLine=4 parentTypes=CompilationUnit line=0 parentEnd=false type=BlockComment rightTypes=LineComment cols=0
++   Test1.java 
+
+@ tests/Test1.java 21 27 parentStart=false prevLine=2 leftLine=2 prevCols=0 rightLine=5 parentTypes=CompilationUnit line=4 parentEnd=false leftTypes=BlockComment type=LineComment rightTypes=LineComment cols=0
++  Test1
+
+@ tests/Test1.java 30 30 parentStart=false prevLine=4 leftLine=4 prevCols=0 rightLine=6 parentTypes=CompilationUnit line=5 parentEnd=false leftTypes=LineComment type=LineComment rightTypes=Modifier,TypeDeclaration cols=0
++ 
+
+@ tests/Test1.java 58 70 parentStart=false prevLine=5 leftLine=6 prevCols=0 rightLine=8 parentTypes=TypeDeclaration,CompilationUnit line=7 parentEnd=false leftTypes=SimpleName type=LineComment rightTypes=Modifier,MethodDeclaration cols=4
++  main piece.
+
+@ tests/Test1.java 119 128 parentStart=false prevLine=7 leftLine=8 prevCols=4 rightLine=10 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=9 parentEnd=false leftTypes=SimpleName,SingleVariableDeclaration type=LineComment rightTypes=SimpleType,SimpleName,VariableDeclarationStatement cols=8
++  Do this.
+
+@ tests/Test1.java 153 164 parentStart=false prevLine=9 leftLine=10 prevCols=8 rightLine=11 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=10 parentEnd=false leftTypes=VariableDeclarationStatement type=LineComment rightTypes=IfStatement cols=29
++  the value.
+
+@ tests/Test1.java 190 203 parentStart=false prevLine=10 leftLine=11 prevCols=29 rightLine=13 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=12 parentEnd=false leftTypes=NullLiteral,InfixExpression type=LineComment rightTypes=LineComment cols=12
++  This must be
+
+@ tests/Test1.java 211 221 parentStart=false prevLine=12 leftLine=12 prevCols=12 rightLine=14 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=13 parentEnd=false leftTypes=LineComment type=LineComment rightTypes=SimpleName,QualifiedName,MethodInvocation,ExpressionStatement cols=12
++  non-null.
+
+@ tests/Test1.java 254 263 parentStart=false prevLine=13 leftLine=14 prevCols=12 rightLine=16 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=14 parentEnd=false leftTypes=ExpressionStatement type=BlockComment rightTypes=LineComment cols=37
++  so what 
+
+@ tests/Test1.java 272 281 parentStart=false prevLine=14 leftLine=15 prevCols=37 rightLine=17 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=16 parentEnd=false leftTypes=Block,IfStatement type=LineComment rightTypes=SimpleName,QualifiedName,MethodInvocation,ExpressionStatement cols=8
++  Newline.
+
+@ tests/Test1.java 318 333 parentStart=false prevLine=16 leftLine=18 prevCols=8 rightLine=21 parentTypes=TypeDeclaration,CompilationUnit line=20 parentEnd=false leftTypes=Block,MethodDeclaration type=LineComment rightTypes=Modifier,MethodDeclaration cols=4
++  Make a string.
+
+@ tests/Test1.java 370 377 parentStart=false prevLine=20 leftLine=21 prevCols=4 rightLine=21 parentTypes=SingleVariableDeclaration,MethodDeclaration,TypeDeclaration,CompilationUnit line=21 parentEnd=false leftTypes=PrimitiveType type=BlockComment rightTypes=SimpleName cols=34
++ notused
+
+@ tests/Test1.java 387 393 parentStart=false prevLine=21 leftLine=21 prevCols=34 rightLine=22 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=21 parentEnd=false leftTypes=SimpleName,SingleVariableDeclaration type=LineComment rightTypes=LineComment cols=51
++  yeah.
+
+@ tests/Test1.java 397 403 parentStart=false prevLine=21 leftLine=21 prevCols=51 rightLine=23 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=22 parentEnd=false leftTypes=LineComment type=LineComment rightTypes=ReturnStatement cols=8
++  Thsi.
+

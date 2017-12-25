@@ -4,44 +4,11 @@
 package net.tabesugi.comvcom;
 import java.io.*;
 import java.util.*;
-import javax.xml.parsers.*;
+
 import org.eclipse.jdt.core.*;
 import org.eclipse.jdt.core.dom.*;
 
 public class CommentExtractor extends ASTVisitor {
-
-    static class FeatureSet {
-
-	private Map<String, String> _feats =
-	    new HashMap<String, String>();
-
-	public void put(String key, int value) {
-	    _feats.put(key, Integer.toString(value));
-	}
-	public void put(String key, boolean value) {
-	    _feats.put(key, Boolean.toString(value));
-	}
-	public void put(String key, String value) {
-	    _feats.put(key, value);
-	}
-
-	public String get(String key) {
-	    return _feats.get(key);
-	}
-
-	public String toString() {
-	    String s = null;
-	    for (Map.Entry<String, String> entry : _feats.entrySet()) {
-		if (s == null) {
-		    s = "";
-		} else {
-		    s += " ";
-		}
-		s += entry.getKey()+"="+entry.getValue();
-	    }
-	    return s;
-	}
-    }
 
     static class SourceCode {
 
@@ -310,7 +277,8 @@ public class CommentExtractor extends ASTVisitor {
 		    feats1.put("prevLine", line0);
 		    feats1.put("prevCols", cols0);
 		}
-		out.println("@ "+path+" "+start1+" "+end1+" "+feats1);
+		CommentEntry comm = new CommentEntry(path, start1, end1, feats1);
+		out.println(comm);
 		String s = src.getText(start1, end1);
 		out.println("+ "+s.replace("\n", " "));
 		out.println();
