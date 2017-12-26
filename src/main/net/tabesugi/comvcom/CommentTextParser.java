@@ -71,7 +71,7 @@ public class CommentTextParser {
 			String text = line.substring(2);
 			Tree[] trees = parser.parse(text);
 			for (Tree tree : trees) {
-			    entry.feats.put("tree", flatten(tree));
+			    entry.feats.put("parseTree", flatten(tree));
 			}
 		    }
 		}

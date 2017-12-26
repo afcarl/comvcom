@@ -1,0 +1,30 @@
+@ tests/Test1.java 2 15 parentStart=true rightLine=4 parentTypes=CompilationUnit line=0 parentEnd=false type=BlockComment rightTypes=LineComment parseTree=(ROOT(NP(NN))) cols=0
+
+@ tests/Test1.java 21 27 parentStart=false prevLine=2 prevCols=0 rightLine=5 parentTypes=CompilationUnit line=4 leftTypes=BlockComment type=LineComment rightTypes=LineComment parseTree=(ROOT(NP(NN))) leftLine=2 parentEnd=false cols=0
+
+@ tests/Test1.java 30 30 parentStart=false prevLine=4 leftLine=4 prevCols=0 rightLine=6 parentTypes=CompilationUnit line=5 parentEnd=false leftTypes=LineComment type=LineComment rightTypes=Modifier,TypeDeclaration cols=0
+
+@ tests/Test1.java 59 81 parentStart=true prevLine=5 prevCols=0 rightLine=10 parentTypes=MethodDeclaration,TypeDeclaration,CompilationUnit line=7 leftTypes=SimpleName type=Javadoc rightTypes=Modifier parseTree=(ROOT(FRAG(X(SYM))(VP(NN))(.))) leftLine=6 parentEnd=false cols=4
+
+@ tests/Test1.java 132 141 parentStart=false prevLine=9 prevCols=4 rightLine=12 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=11 leftTypes=SimpleName,SingleVariableDeclaration type=LineComment rightTypes=SimpleType,SimpleName,VariableDeclarationStatement parseTree=(ROOT(S(VP(VB)(NP(DT)))(.))) leftLine=10 parentEnd=false cols=8
+
+@ tests/Test1.java 166 177 parentStart=false prevLine=11 prevCols=8 rightLine=13 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=12 leftTypes=VariableDeclarationStatement type=LineComment rightTypes=IfStatement parseTree=(ROOT(NP(DT)(NN)(.))) leftLine=12 parentEnd=false cols=29
+
+@ tests/Test1.java 203 216 parentStart=false prevLine=12 prevCols=29 rightLine=15 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=14 leftTypes=NullLiteral,InfixExpression type=LineComment rightTypes=LineComment parseTree=(ROOT(S(NP(DT))(VP(MD)(VP(VB))))) leftLine=13 parentEnd=false cols=12
+
+@ tests/Test1.java 224 234 parentStart=false prevLine=14 prevCols=12 rightLine=16 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=15 leftTypes=LineComment type=LineComment rightTypes=SimpleName,QualifiedName,MethodInvocation,ExpressionStatement parseTree=(ROOT(FRAG(ADJP(JJ))(.))) leftLine=14 parentEnd=false cols=12
+
+@ tests/Test1.java 267 276 parentStart=false prevLine=15 prevCols=12 rightLine=18 parentTypes=Block,IfStatement,Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=16 leftTypes=ExpressionStatement type=BlockComment rightTypes=LineComment parseTree=(ROOT(X(ADVP(RB))(NP(WP)))) leftLine=16 parentEnd=false cols=37
+
+@ tests/Test1.java 285 294 parentStart=false prevLine=16 prevCols=37 rightLine=19 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=18 leftTypes=Block,IfStatement type=LineComment rightTypes=SimpleName,QualifiedName,MethodInvocation,ExpressionStatement parseTree=(ROOT(FRAG(NP(NNP))(.))) leftLine=17 parentEnd=false cols=8
+
+@ tests/Test1.java 329 355 parentStart=false prevLine=18 prevCols=8 rightLine=23 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=20 leftTypes=ExpressionStatement type=Javadoc rightTypes=LineComment parseTree=(ROOT(NP(NN))) leftLine=19 parentEnd=false cols=8
+
+@ tests/Test1.java 371 386 parentStart=false prevLine=20 prevCols=8 rightLine=24 parentTypes=TypeDeclaration,CompilationUnit line=23 leftTypes=Block,MethodDeclaration type=LineComment rightTypes=Modifier,MethodDeclaration parseTree=(ROOT(S(VP(VB)(NP(DT)(NN)))(.))) leftLine=21 parentEnd=false cols=4
+
+@ tests/Test1.java 423 430 parentStart=false prevLine=23 prevCols=4 rightLine=24 parentTypes=SingleVariableDeclaration,MethodDeclaration,TypeDeclaration,CompilationUnit line=24 leftTypes=PrimitiveType type=BlockComment rightTypes=SimpleName parseTree=(ROOT(ADJP(JJ))) leftLine=24 parentEnd=false cols=34
+
+@ tests/Test1.java 440 446 parentStart=false prevLine=24 prevCols=34 rightLine=25 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=24 leftTypes=SimpleName,SingleVariableDeclaration type=LineComment rightTypes=LineComment parseTree=(ROOT(NP(NN)(.))) leftLine=24 parentEnd=false cols=51
+
+@ tests/Test1.java 450 456 parentStart=false prevLine=24 prevCols=51 rightLine=26 parentTypes=Block,MethodDeclaration,TypeDeclaration,CompilationUnit line=25 leftTypes=LineComment type=LineComment rightTypes=ReturnStatement parseTree=(ROOT(NP(NNS)(.))) leftLine=24 parentEnd=false cols=8
+
