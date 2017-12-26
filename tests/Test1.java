@@ -5,7 +5,9 @@
 // Test1
 //
 public class Test1 {
-    // main piece.
+    /**
+     * Javadoc!
+     */
     public static void main(String[] args) {
 	// Do this.
 	String a = foo(123); // the value.
@@ -16,6 +18,7 @@ public class Test1 {
 	}
 	// Newline.
 	System.out.println();
+        /****this is javadoc too.*****/
     }
 
     // Make a string.
