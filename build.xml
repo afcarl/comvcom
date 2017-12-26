@@ -117,6 +117,10 @@
          dest="${libDir}/org.eclipse.text-3.6.0.jar" />
     <get src="https://repo.maven.apache.org/maven2/org/eclipse/platform/org.eclipse.core.commands/3.8.1/org.eclipse.core.commands-3.8.1.jar"
          dest="${libDir}/org.eclipse.core.commands-3.8.1.jar" />
+    <get src="https://search.maven.org/remotecontent?filepath=edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar"
+         dest="${libDir}/stanford-corenlp-3.8.0.jar" />
+    <get src="https://search.maven.org/remotecontent?filepath=edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-english.jar"
+         dest="${libDir}/stanford-corenlp-3.8.0-models-english.jar" />
   </target>
 
 </project>
