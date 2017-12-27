@@ -29,7 +29,7 @@ class CommentEntry:
         return
 
     @classmethod
-    def load(klass, line):
+    def fromstring(klass, line):
         if not line.startswith('@'): raise ValueError(line)
         (_,_,line) = line.partition(' ')
         (path,_,line) = line.partition(' ')
@@ -41,18 +41,22 @@ class CommentEntry:
             feats[k] = v
         return klass(path, int(start), int(end), feats)
 
+    @classmethod
+    def load(klass, fp):
+        for line in fp:
+            if line.startswith('@'):
+                try:
+                    yield klass.fromstring(line.strip())
+                except ValueError:
+                    raise ValueError(line)
+        return
+
 def main(argv):
     import fileinput
     args = argv[1:]
-    for line in fileinput.input(args):
-        if line.startswith('@'):
-            try:
-                entry = CommentEntry.load(line.strip())
-                print (entry)
-            except ValueError:
-                print (line)
-                raise
-
+    fp = fileinput.input(args)
+    for entry in CommentEntry.load(fp):
+        print (entry)
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
