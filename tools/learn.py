@@ -59,9 +59,11 @@ class DiscreteFeature(Feature):
                 d[v].append(e)
             else:
                 d[v] = [e]
+        if len(d) < 2: raise self.InvalidSplit
         n = len(ents)
         avgetp = sum( len(es) * entetp(es) for es in d.values() ) / n
-        return (avgetp, None, list(d.values()))
+        split = list(d.values())
+        return (avgetp, None, split)
 DF = DiscreteFeature
 
 ##  QuantitativeFeature
@@ -70,18 +72,25 @@ class QuantitativeFeature(Feature):
 
     def split(self, ents):
         assert 2 <= len(ents)
-        es = sorted(ents, key=(lambda e: self.func(e)))
+        pairs = [ (e, self.func(e)) for e in ents ]
+        pairs.sort(key=(lambda ev: ev[1]))
+        es = [ e for (e,_) in pairs ]
+        vs = [ v for (_,v) in pairs ]
         n = len(ents)
         minsplit = minetp = None
-        for i in range(1, n-1):
+        v0 = vs[0]
+        for i in range(1, n):
+            v1 = vs[i]
+            if v0 == v1: continue
+            v0 = v1
             avgetp = (i * entetp(es[:i]) + (n-i) * entetp(es[i:])) / n
             if minsplit is None or avgetp < minetp:
                 minetp = avgetp
                 minsplit = i
-        assert minsplit is not None
-        threshold = self.func(es[minsplit])
-        arg = '<%r' % threshold
-        return (minetp, arg, [es[:minsplit], es[minsplit:]])
+        if minsplit is None: raise self.InvalidSplit
+        arg = ('<', vs[minsplit])
+        split = [es[:minsplit], es[minsplit:]]
+        return (minetp, arg, split)
 QF = QuantitativeFeature
 
 
@@ -111,35 +120,43 @@ class TreeBranch:
 ##
 class TreeBuilder:
 
-    def __init__(self, features, minkeys=2, minent=0.01):
+    def __init__(self, features, minkeys=2, minent=0.01, debug=1):
         self.features = features
         self.minkeys = minkeys
         self.minent = minent
+        self.debug = debug
         return
 
     def build(self, ents, depth=0):
-        if len(ents) < 2: return None
         keys = countkeys(ents)
+        etp = getetp(keys)
+        if self.debug:
+            print ('Build:', keys, etp)
+        if len(ents) < 2: return None
         if len(keys) < self.minkeys: return None
-        if getetp(keys) < self.minent: return None
+        if etp < self.minent: return None
         minbranch = minetp = None
-        for feature in self.features:
+        for feat in self.features:
             try:
-                (etp, arg, split) = feature.split(ents)
+                (etp, arg, split) = feat.split(ents)
             except Feature.InvalidSplit:
                 continue
             if minbranch is None or etp < minetp:
                 minetp = etp
-                minbranch = (feature, arg, split)
+                minbranch = (feat, arg, split)
         if minbranch is None: return None
-        (feature, arg, split) = minbranch
-        print ('branch', depth, feature, arg)
+        (feat, arg, split) = minbranch
+        if self.debug:
+            print ('Feature:', feat, arg, etp)
+            for (i,ents) in enumerate(split):
+                r = [ (feat.func(e), e.key) for e in ents ]
+                print (' Split%d (%d): %r' % (i, len(r), r))
         children = []
-        for ents in split:
-            branch = self.build(ents, depth+1)
+        for es in split:
+            branch = self.build(es, depth+1)
             if branch is not None:
                 children.append(branch)
-        return TreeBranch(feature, arg, children)
+        return TreeBranch(feat, arg, children)
 
 builder1 = TreeBuilder([
     QF('deltaLine', (lambda e: int(e['line']) - int(e.get('prevLine',0)))),
