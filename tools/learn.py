@@ -8,6 +8,8 @@
 import sys
 from math import log2
 from comment import CommentEntry
+from srcdb import SourceDB
+
 
 def calcetp(keys):
     n = sum(keys.values())
@@ -176,6 +178,7 @@ class TreeLeaf:
 class TreeBuilder:
 
     FEATURES = (
+        DF('type'),
         QF('deltaLine'),
         QF('deltaCols'),
     )
@@ -256,13 +259,15 @@ def main(argv):
         print('usage: %s [-d] [-f feats] [file ...]' % argv[0])
         return 100
     try:
-        (opts, args) = getopt.getopt(argv[1:], 'df:')
+        (opts, args) = getopt.getopt(argv[1:], 'dB:f:')
     except getopt.GetoptError:
         return usage()
     debug = 0
+    srcdb = None
     feats = None
     for (k, v) in opts:
         if k == '-d': debug += 1
+        elif k == '-B': srcdb = SourceDB(v)
         elif k == '-f': feats = v
     fp = fileinput.input(args)
     ents = []
@@ -271,7 +276,7 @@ def main(argv):
         e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
         e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
         ents.append(e)
-    builder = TreeBuilder(['deltaLine', 'deltaCols'], debug=debug)
+    builder = TreeBuilder(['type', 'deltaLine', 'deltaCols'], debug=debug)
     if feats is None:
         # learning
         root = builder.build(ents)
@@ -287,6 +292,11 @@ def main(argv):
             key = tree.run(e)
             if e.key == key:
                 correct += 1
+            elif srcdb is not None:
+                print(e)
+                src = srcdb.get(e.path)
+                for (_,line) in src.show([(e.start, e.end, 1)]):
+                    print(line, end='')
         print (correct, len(ents))
     return 0
 
