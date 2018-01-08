@@ -51,18 +51,27 @@ class Feature:
     def __repr__(self):
         return ('<%s: %s>' % (self.__class__.__name__, self.name))
 
+    def get(self, e):
+        return e[self.name]
+
     def split(self, ents):
+        raise NotImplementedError
+
+    def ident(self, arg, e):
         raise NotImplementedError
 
 ##  DiscreteFeature
 ##
 class DiscreteFeature(Feature):
 
+    def ident(self, arg, e):
+        return self.get(e)
+
     def split(self, ents):
         assert 2 <= len(ents)
         d = {}
         for e in ents:
-            v = e[self.name]
+            v = self.get(e)
             if v in d:
                 d[v].append(e)
             else:
@@ -70,17 +79,28 @@ class DiscreteFeature(Feature):
         if len(d) < 2: raise self.InvalidSplit
         n = len(ents)
         avgetp = sum( len(es) * entetp(es) for es in d.values() ) / n
-        split = list(d.values())
+        split = list(d.items())
         return (avgetp, None, split)
+
 DF = DiscreteFeature
 
 ##  QuantitativeFeature
 ##
 class QuantitativeFeature(Feature):
 
+    def get(self, e):
+        return e[self.name]
+
+    def ident(self, arg, e):
+        v = self.get(e)
+        if v < arg:
+            return 'lt'
+        else:
+            return 'ge'
+
     def split(self, ents):
         assert 2 <= len(ents)
-        pairs = [ (e, e[self.name]) for e in ents ]
+        pairs = [ (e, self.get(e)) for e in ents ]
         pairs.sort(key=(lambda ev: ev[1]))
         es = [ e for (e,_) in pairs ]
         vs = [ v for (_,v) in pairs ]
@@ -96,9 +116,10 @@ class QuantitativeFeature(Feature):
                 minetp = avgetp
                 minsplit = i
         if minsplit is None: raise self.InvalidSplit
-        arg = ('<', vs[minsplit])
-        split = [es[:minsplit], es[minsplit:]]
+        arg = vs[minsplit]
+        split = [('lt', es[:minsplit]), ('ge', es[minsplit:])]
         return (minetp, arg, split)
+
 QF = QuantitativeFeature
 
 
@@ -116,10 +137,17 @@ class TreeBranch:
         return ('<TreeBranch(%r, %r)>' %
                 (self.feature, self.arg))
 
+    def run(self, e):
+        v0 =  self.feature.ident(self.arg, e)
+        for (v,branch) in self.children:
+            if v == v0: break
+        return branch.run(e)
+
     def dump(self, depth=0):
         ind = '  '*depth
         print ('%sBranch %r: %r' % (ind, self.feature, self.arg))
-        for branch in self.children:
+        for (v,branch) in self.children:
+            print ('%s Value: %r' % (ind, v))
             branch.dump(depth+1)
         return
 
@@ -133,6 +161,9 @@ class TreeLeaf:
 
     def __repr__(self):
         return ('<TreeLeaf(%r)>' % (self.key))
+
+    def run(self, e):
+        return self.key
 
     def dump(self, depth=0):
         ind = '  '*depth
@@ -167,7 +198,7 @@ class TreeBuilder:
         etp = calcetp(keys)
         ind = '  '*depth
         if self.debug:
-            print ('%sBuild: %r, %.3f' % (ind, keys, etp))
+            print ('%sBuild: %r, etp=%.3f' % (ind, keys, etp))
         if len(ents) < 2: return None
         if len(keys) < self.minkeys: return None
         if etp < self.minent: return None
@@ -183,27 +214,26 @@ class TreeBuilder:
         if minbranch is None: return None
         (feat, arg, split) = minbranch
         if self.debug:
-            print ('%sFeature: %r %r, %.3f' % (ind, feat, arg, etp))
+            print ('%sFeature: %r, arg=%r, etp=%.3f' % (ind, feat, arg, etp))
         children = []
-        for (i,es) in enumerate(split):
+        for (i,(v,es)) in enumerate(split):
             if 2 <= self.debug:
                 r = [ (e[feat.name], e.key) for e in es ]
-                print ('%s Split%d (%d): %r' % (ind, i, len(r), r))
+                print ('%s Split%d (%d): %r, %r' % (ind, i, len(r), v, r))
             branch = self.build(es, depth+1)
             if branch is None:
                 keys = countkeys(es)
                 if self.debug:
                     print ('%s Leaf: %r' % (ind, keys))
-                children.append(TreeLeaf(bestkey(keys)))
-            else:
-                children.append(branch)
+                branch = TreeLeaf(bestkey(keys))
+            children.append((v, branch))
         return TreeBranch(feat, arg, children)
 
 
 # export_tree
 def export_tree(tree):
     if isinstance(tree, TreeBranch):
-        children = [ export_tree(branch) for branch in tree.children ]
+        children = [ (v,export_tree(branch)) for (v,branch) in tree.children ]
         return (tree.feature.name, tree.arg, children)
     else:
         return (tree.key)
@@ -212,7 +242,7 @@ def export_tree(tree):
 def import_tree(builder, tree):
     if isinstance(tree, tuple):
         (name, arg, children) = tree
-        children = [ import_tree(builder, branch) for branch in children ]
+        children = [ (v,import_tree(builder, branch)) for (v,branch) in children ]
         return TreeBranch(builder.getfeat(name), arg, children)
     else:
         return TreeLeaf(tree)
@@ -220,8 +250,20 @@ def import_tree(builder, tree):
 
 # main
 def main(argv):
+    import getopt
     import fileinput
-    args = argv[1:]
+    def usage():
+        print('usage: %s [-d] [-f feats] [file ...]' % argv[0])
+        return 100
+    try:
+        (opts, args) = getopt.getopt(argv[1:], 'df:')
+    except getopt.GetoptError:
+        return usage()
+    debug = 0
+    feats = None
+    for (k, v) in opts:
+        if k == '-d': debug += 1
+        elif k == '-f': feats = v
     fp = fileinput.input(args)
     ents = []
     for e in CommentEntry.load(fp):
@@ -229,10 +271,23 @@ def main(argv):
         e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
         e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
         ents.append(e)
-    builder = TreeBuilder(['deltaLine', 'deltaCols'])
-    root = builder.build(ents)
-    root.dump()
-    print (export_tree(root))
+    builder = TreeBuilder(['deltaLine', 'deltaCols'], debug=debug)
+    if feats is None:
+        # learning
+        root = builder.build(ents)
+        if debug:
+            root.dump()
+        print (export_tree(root))
+    else:
+        with open(feats) as fp:
+            data = eval(fp.read())
+        tree = import_tree(builder, data)
+        correct = 0
+        for e in ents:
+            key = tree.run(e)
+            if e.key == key:
+                correct += 1
+        print (correct, len(ents))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
