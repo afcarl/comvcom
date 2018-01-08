@@ -51,7 +51,7 @@ class Feature:
 class DiscreteFeature(Feature):
 
     def split(self, ents):
-        if len(ents) <= 2: raise self.InvalidSplit
+        assert 2 <= len(ents)
         d = {}
         for e in ents:
             v = self.func(e)
@@ -69,7 +69,7 @@ DF = DiscreteFeature
 class QuantitativeFeature(Feature):
 
     def split(self, ents):
-        if len(ents) <= 2: raise self.InvalidSplit
+        assert 2 <= len(ents)
         es = sorted(ents, key=(lambda e: self.func(e)))
         n = len(ents)
         minsplit = minetp = None
@@ -118,6 +118,7 @@ class TreeBuilder:
         return
 
     def build(self, ents, depth=0):
+        if len(ents) < 2: return None
         keys = countkeys(ents)
         if len(keys) < self.minkeys: return None
         if getetp(keys) < self.minent: return None
