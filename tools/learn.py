@@ -35,9 +35,8 @@ class Feature:
 
     class InvalidSplit(ValueError): pass
 
-    def __init__(self, name, func):
+    def __init__(self, name):
         self.name = name
-        self.func = func
         return
 
     def __repr__(self):
@@ -54,7 +53,7 @@ class DiscreteFeature(Feature):
         assert 2 <= len(ents)
         d = {}
         for e in ents:
-            v = self.func(e)
+            v = e[self.name]
             if v in d:
                 d[v].append(e)
             else:
@@ -72,7 +71,7 @@ class QuantitativeFeature(Feature):
 
     def split(self, ents):
         assert 2 <= len(ents)
-        pairs = [ (e, self.func(e)) for e in ents ]
+        pairs = [ (e, e[self.name]) for e in ents ]
         pairs.sort(key=(lambda ev: ev[1]))
         es = [ e for (e,_) in pairs ]
         vs = [ v for (_,v) in pairs ]
@@ -149,7 +148,7 @@ class TreeBuilder:
         if self.debug:
             print ('Feature:', feat, arg, etp)
             for (i,ents) in enumerate(split):
-                r = [ (feat.func(e), e.key) for e in ents ]
+                r = [ (e[feat.name], e.key) for e in ents ]
                 print (' Split%d (%d): %r' % (i, len(r), r))
         children = []
         for es in split:
@@ -158,20 +157,20 @@ class TreeBuilder:
                 children.append(branch)
         return TreeBranch(feat, arg, children)
 
-builder1 = TreeBuilder([
-    QF('deltaLine', (lambda e: int(e['line']) - int(e.get('prevLine',0)))),
-    QF('deltaCols', (lambda e: int(e['cols']) - int(e.get('prevCols',0)))),
-])
 
+# main
 def main(argv):
     import fileinput
     args = argv[1:]
     fp = fileinput.input(args)
     ents = []
-    for ent in CommentEntry.load(fp):
-        ent.key = ent['key'][0]
-        ents.append(ent)
-    root = builder1.build(ents)
+    for e in CommentEntry.load(fp):
+        e.key = e['key'][0]
+        e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
+        e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
+        ents.append(e)
+    builder = TreeBuilder([QF('deltaLine'), QF('deltaCols')])
+    root = builder.build(ents)
     root.dump()
     return 0
 

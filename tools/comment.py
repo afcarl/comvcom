@@ -24,6 +24,10 @@ class CommentEntry:
     def __getitem__(self, k):
         return self.feats.get(k)
 
+    def __setitem__(self, k, v):
+        self.feats[k] = v
+        return
+
     def get(self, k, v=None):
         return self.feats.get(k, v)
 
