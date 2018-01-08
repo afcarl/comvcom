@@ -275,6 +275,7 @@ def main(argv):
         if k == '-d': debug += 1
         elif k == '-B': srcdb = SourceDB(v)
         elif k == '-f': feats = v
+
     fp = fileinput.input(args)
     ents = []
     for e in CommentEntry.load(fp):
