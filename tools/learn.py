@@ -2,8 +2,10 @@
 ##
 ##  learn.py
 ##
-##  Usage:
-##    $ learn.py comments.feats
+##  Training:
+##    $ learn.py comments.feats > out
+##  Testing:
+##    $ learn.py -B src/ -f out comments.feats
 ##
 import sys
 from math import log2
@@ -139,16 +141,19 @@ class TreeBranch:
         return ('<TreeBranch(%r, %r)>' %
                 (self.feature, self.arg))
 
-    def run(self, e):
-        v0 =  self.feature.ident(self.arg, e)
-        for (v,branch) in self.children:
-            if v == v0: break
-        return branch.run(e)
+    def test(self, e):
+        v = self.feature.ident(self.arg, e)
+        try:
+            branch = self.children[v]
+            return branch.test(e)
+        except KeyError:
+            print ('Unknown value: %r in %r' % (v, e))
+            raise ValueError(v)
 
     def dump(self, depth=0):
         ind = '  '*depth
         print ('%sBranch %r: %r' % (ind, self.feature, self.arg))
-        for (v,branch) in self.children:
+        for (v,branch) in self.children.items():
             print ('%s Value: %r' % (ind, v))
             branch.dump(depth+1)
         return
@@ -164,7 +169,7 @@ class TreeLeaf:
     def __repr__(self):
         return ('<TreeLeaf(%r)>' % (self.key))
 
-    def run(self, e):
+    def test(self, e):
         return self.key
 
     def dump(self, depth=0):
@@ -218,7 +223,7 @@ class TreeBuilder:
         (feat, arg, split) = minbranch
         if self.debug:
             print ('%sFeature: %r, arg=%r, etp=%.3f' % (ind, feat, arg, etp))
-        children = []
+        children = {}
         for (i,(v,es)) in enumerate(split):
             if 2 <= self.debug:
                 r = [ (e[feat.name], e.key) for e in es ]
@@ -229,14 +234,15 @@ class TreeBuilder:
                 if self.debug:
                     print ('%s Leaf: %r' % (ind, keys))
                 branch = TreeLeaf(bestkey(keys))
-            children.append((v, branch))
+            children[v] = branch
         return TreeBranch(feat, arg, children)
 
 
 # export_tree
 def export_tree(tree):
     if isinstance(tree, TreeBranch):
-        children = [ (v,export_tree(branch)) for (v,branch) in tree.children ]
+        children = [ (v, export_tree(branch))
+                     for (v,branch) in tree.children.items() ]
         return (tree.feature.name, tree.arg, children)
     else:
         return (tree.key)
@@ -245,7 +251,7 @@ def export_tree(tree):
 def import_tree(builder, tree):
     if isinstance(tree, tuple):
         (name, arg, children) = tree
-        children = [ (v,import_tree(builder, branch)) for (v,branch) in children ]
+        children = { v: import_tree(builder, branch) for (v,branch) in children }
         return TreeBranch(builder.getfeat(name), arg, children)
     else:
         return TreeLeaf(tree)
@@ -278,26 +284,29 @@ def main(argv):
         ents.append(e)
     builder = TreeBuilder(['type', 'deltaLine', 'deltaCols'], debug=debug)
     if feats is None:
-        # learning
+        # training
         root = builder.build(ents)
         if debug:
             root.dump()
         print (export_tree(root))
     else:
+        # testing
         with open(feats) as fp:
             data = eval(fp.read())
         tree = import_tree(builder, data)
         correct = 0
         for e in ents:
-            key = tree.run(e)
+            key = tree.test(e)
             if e.key == key:
                 correct += 1
             elif srcdb is not None:
-                print(e)
+                print (key, e)
                 src = srcdb.get(e.path)
-                for (_,line) in src.show([(e.start, e.end, 1)]):
+                ranges = [(e.start, e.end, 1)]
+                for (_,line) in src.show(ranges):
                     print(line, end='')
-        print (correct, len(ents))
+                print()
+        print ('%d/%d' % (correct, len(ents)))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
