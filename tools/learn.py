@@ -6,22 +6,34 @@
 ##    $ learn.py comments.feats
 ##
 import sys
-from math import log
+from math import log2
 from comment import CommentEntry
 
-def getetp(ents):
-    n = len(ents)
+# getetp: calc the entropy.
+def getetp(keys):
+    n = sum(keys.values())
+    etp = sum( v*log2(n/v) for v in keys.values() ) / n
+    return etp
+
+def countkeys(ents):
     d = {}
-    for ent in ents:
-        k = ent.key
+    for e in ents:
+        k = e.key
         if k in d:
             d[k] += 1
         else:
             d[k] = 1
-    etp = sum( v*log(n/v) for v in d.values() ) / n
-    return etp
+    return d
 
-class Selector:
+def entetp(ents):
+    return getetp(countkeys(ents))
+
+
+##  Feature
+##
+class Feature:
+
+    class InvalidSplit(ValueError): pass
 
     def __init__(self, name, func):
         self.name = name
@@ -34,24 +46,12 @@ class Selector:
     def split(self, ents):
         raise NotImplementedError
 
-class Branch:
-
-    def __init__(self, selector, arg, etp, splits):
-        self.selector = selector
-        self.arg = arg
-        self.etp = etp
-        self.splits = splits
-        return
-
-    def __repr__(self):
-        return ('<Branch(%r, %r): etp=%.2f, %r>' %
-                (self.selector, self.arg, self.etp,
-                 [ len(a) for a in  self.splits ]))
-
-class DS(Selector):
+##  DiscreteFeature
+##
+class DiscreteFeature(Feature):
 
     def split(self, ents):
-        if len(ents) <= 1: return None
+        if len(ents) <= 2: raise self.InvalidSplit
         d = {}
         for e in ents:
             v = self.func(e)
@@ -60,48 +60,89 @@ class DS(Selector):
             else:
                 d[v] = [e]
         n = len(ents)
-        avgetp = sum( len(a) * getetp(a) for a in d.values() ) / n
-        return Branch(self, None, avgetp, list(d.values()))
+        avgetp = sum( len(es) * entetp(es) for es in d.values() ) / n
+        return (avgetp, None, list(d.values()))
+DF = DiscreteFeature
 
-class QS(Selector):
+##  QuantitativeFeature
+##
+class QuantitativeFeature(Feature):
 
     def split(self, ents):
-        if len(ents) <= 2: return None
-        a = sorted(ents, key=(lambda e: self.func(e)))
+        if len(ents) <= 2: raise self.InvalidSplit
+        es = sorted(ents, key=(lambda e: self.func(e)))
         n = len(ents)
         minsplit = minetp = None
         for i in range(1, n-1):
-            avgetp = (i * getetp(a[:i]) + (n-i) * getetp(a[i:])) / n
+            avgetp = (i * entetp(es[:i]) + (n-i) * entetp(es[i:])) / n
             if minsplit is None or avgetp < minetp:
                 minetp = avgetp
                 minsplit = i
         assert minsplit is not None
-        threshold = self.func(a[minsplit])
+        threshold = self.func(es[minsplit])
         arg = '<%r' % threshold
-        return Branch(self, arg, minetp, [a[:minsplit], a[minsplit:]])
+        return (minetp, arg, [es[:minsplit], es[minsplit:]])
+QF = QuantitativeFeature
 
+
+##  TreeBranch
+##
+class TreeBranch:
+
+    def __init__(self, feature, arg, children):
+        self.feature = feature
+        self.arg = arg
+        self.children = children
+        return
+
+    def __repr__(self):
+        return ('<TreeBranch(%r, %r)>' %
+                (self.feature, self.arg))
+
+    def dump(self, depth=0):
+        ind = ' '*depth
+        print ('%sBranch %r: %r' % (ind, self.feature, self.arg))
+        for branch in self.children:
+            branch.dump(depth+1)
+        return
+
+
+##  TreeBuilder
+##
 class TreeBuilder:
 
-    def __init__(self, selectors):
-        self.selectors = selectors
+    def __init__(self, features, minkeys=2, minent=0.01):
+        self.features = features
+        self.minkeys = minkeys
+        self.minent = minent
         return
 
-    def build(self, ents, depth=0, minetp=sys.maxsize):
-        branch0 = None
-        for selector in self.selectors:
-            branch1 = selector.split(ents)
-            if branch1 is not None and branch1.etp < minetp:
-                minetp = branch1.etp
-                branch0 = branch1
-        if branch0 is None: return
-        print ('branch', depth, branch0)
-        for split in branch0.splits:
-            self.build(split, depth+1, branch0.etp)
-        return
+    def build(self, ents, depth=0):
+        keys = countkeys(ents)
+        if len(keys) < self.minkeys: return None
+        if getetp(keys) < self.minent: return None
+        minbranch = minetp = None
+        for feature in self.features:
+            try:
+                (etp, arg, split) = feature.split(ents)
+            except Feature.InvalidSplit:
+                continue
+            if minbranch is None or etp < minetp:
+                minetp = etp
+                minbranch = (feature, arg, split)
+        if minbranch is None: return None
+        (feature, arg, split) = minbranch
+        print ('branch', depth, feature, arg)
+        children = []
+        for ents in split:
+            branch = self.build(ents, depth+1)
+            if branch is not None:
+                children.append(branch)
+        return TreeBranch(feature, arg, children)
 
 builder1 = TreeBuilder([
-    QS('deltaLine', (lambda e: int(e['line']) - int(e.get('prevLine',0)))),
-    QS('deltaCols', (lambda e: int(e['cols']) - int(e.get('prevCols',0)))),
+    QF('deltaLine', (lambda e: int(e['line']) - int(e.get('prevLine',0)))),
+    QF('deltaCols', (lambda e: int(e['cols']) - int(e.get('prevCols',0)))),
 ])
 
 def main(argv):
@@ -112,7 +153,8 @@ def main(argv):
     for ent in CommentEntry.load(fp):
         ent.key = ent['key'][0]
         ents.append(ent)
-    builder1.build(ents)
+    root = builder1.build(ents)
+    root.dump()
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
