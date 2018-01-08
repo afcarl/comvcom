@@ -39,9 +39,9 @@ def show(index, src, start, end, key, url=None, ncontext=4):
                     if v == 0:
                         s = s.replace('\n','')
                         buf += q(s)
-                        if s and anno:
+                        if anno:
                             linenos.add(lineno)
-                    elif 0 < v:
+                    elif v < 0:
                         buf += '<mark>'
                     else:
                         buf += '</mark>'
@@ -52,7 +52,8 @@ def show(index, src, start, end, key, url=None, ncontext=4):
         lineno1 = max(linenos)+1
         print('<div id="%s" class=src><div class=head>%s:' % (index, index))
         print('<a href="%s#L%d-L%d">%s</a></div>' % (q(url), lineno0, lineno1, name))
-        print('<div class=key>key=%s</div>' % (q(key)))
+        if key is not None:
+            print('<div class=key>key=%s</div>' % (q(key)))
         print('<pre>')
         for line in lines:
             print(line)
@@ -91,7 +92,7 @@ def main(argv):
         src = srcdb.get(e.path)
         url = None
         if html and srcmap is not None:
-            url = srcmap.geturl(name)
+            url = srcmap.geturl(e.path)
         show(index, src, e.start, e.end, e.key, url=url, ncontext=ncontext)
         index += 1
 
