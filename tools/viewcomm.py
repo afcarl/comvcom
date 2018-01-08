@@ -57,7 +57,7 @@ def show(index, src, start, end, key, url=None, ncontext=4):
         print('<pre>')
         for line in lines:
             print(line)
-        print('</pre></div>')
+        print('</pre></div>\n')
     return
 
 def main(argv):
