@@ -4,25 +4,33 @@ import os.path
 from comment import CommentEntry
 from srcdb import SourceDB, SourceMap
 
+BASEDIR = os.path.dirname(__file__)
+
 def q(s):
     return s.replace('&','&amp;').replace('>','&gt;').replace('<','&lt;').replace('"','&quot;')
 
 def show_html_headers():
     print('''<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <style>
 pre { margin: 1em; background: #eeeeee; }
 .head { font-size: 75%; font-weight: bold; }
 .src { margin: 8px; padding: 4px; border: 2px solid gray; }
 .key { font-weight: bold; }
 </style>
-<body>
 ''')
+    with open(os.path.join(BASEDIR, 'helper.js')) as fp:
+        print('<script>')
+        print(fp.read())
+        print('</script>')
+    print('<body onload="run(\'a\')">')
+    print('<textarea id="a" cols="80" rows="4" spellcheck="false" autocomplete="off"></textarea>')
     return
 
-def show(index, src, start, end, key, url=None, ncontext=4):
+def show(cid, src, start, end, key, url=None, ncontext=4):
     ranges = [(start, end, True)]
     if url is None:
-        print('# %s:' % index)
+        print('# %s:' % cid)
         print('@ %s %d %d key=%s' % (src.name, start, end, key))
         for (_,line) in src.show(ranges, ncontext=ncontext):
             print('  '+line, end='')
@@ -50,7 +58,8 @@ def show(index, src, start, end, key, url=None, ncontext=4):
         name = os.path.basename(src.name)
         lineno0 = min(linenos)+1
         lineno1 = max(linenos)+1
-        print('<div id="%s" class=src><div class=head>%s:' % (index, index))
+        print('<div class=src><div class=head>%s:' % (cid))
+        print('<span id="%s" class=ui> </span>' % (cid))
         print('<a href="%s#L%d-L%d">%s</a></div>' % (q(url), lineno0, lineno1, name))
         if key is not None:
             print('<div class=key>key=%s</div>' % (q(key)))
@@ -93,7 +102,8 @@ def main(argv):
         url = None
         if html and srcmap is not None:
             url = srcmap.geturl(e.path)
-        show(index, src, e.start, e.end, e.key, url=url, ncontext=ncontext)
+        cid = 'c%03d' % index
+        show(cid, src, e.start, e.end, e.key, url=url, ncontext=ncontext)
         index += 1
 
     return 0

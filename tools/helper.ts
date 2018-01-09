@@ -1,5 +1,6 @@
 // helper.ts
 
+const FIELDNAME = 'CommentTaggerData';
 const CHOICES = ['moo', 'zoo'];
 
 var textarea: HTMLTextAreaElement = null;
@@ -56,6 +57,10 @@ function updateHTML(data: proplist) {
     }
 }
 
+function saveText() {
+    window.localStorage.setItem(FIELDNAME, textarea.value);
+}
+
 function initData(): proplist {
     let data: proplist = {};
 
@@ -64,6 +69,7 @@ function initData(): proplist {
         let cid = e.id.substr(1);
         data[cid][0] = e.value;
         textarea.value = exportText(data);
+	saveText();
     }
 
     function onCheckChanged(ev: Event) {
@@ -71,45 +77,46 @@ function initData(): proplist {
         let cid = e.id.substr(1);
         data[cid][1] = (e.checked)? 1 : 0;
         textarea.value = exportText(data);
+	saveText();
     }
 
-    for (let e of toArray(document.getElementsByClassName('src'))) {
+    for (let e of toArray(document.getElementsByClassName('ui'))) {
         let cid = e.id;
-        for (let c of toArray(e.getElementsByClassName('head'))) {
-            let select = document.createElement('select');
-            select.id = 'S'+cid;
-            for (let k of CHOICES) {
-                let option = document.createElement('option');
-                option.setAttribute('value', k);
-                option.innerText = k;
-                select.appendChild(option);
-            }
-            let label = document.createElement('label');
-            let checkbox = document.createElement('input');
-            checkbox.id = 'C'+cid;
-            checkbox.setAttribute('type', 'checkbox');
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode('Ung?'));
-            c.appendChild(document.createTextNode(' '));
-            c.appendChild(select);
-            c.appendChild(document.createTextNode(' '));
-            c.appendChild(label);
-            select.addEventListener('change', onItemChanged);
-            checkbox.addEventListener('change', onCheckChanged);
+        let select = document.createElement('select');
+        select.id = 'S'+cid;
+        for (let k of CHOICES) {
+            let option = document.createElement('option');
+            option.setAttribute('value', k);
+            option.innerText = k;
+            select.appendChild(option);
         }
+        let label = document.createElement('label');
+        let checkbox = document.createElement('input');
+        checkbox.id = 'C'+cid;
+        checkbox.setAttribute('type', 'checkbox');
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode('Ung?'));
+        e.appendChild(select);
+        e.appendChild(document.createTextNode(' '));
+        e.appendChild(label);
+        select.addEventListener('change', onItemChanged);
+        checkbox.addEventListener('change', onCheckChanged);
         data[cid] = [null, 0];
     }
     return data;
 }
 
 var curdata: proplist = null;
-function run() {
+function run(id: string) {
     function onTextChanged(ev: Event) {
         importText(curdata, textarea.value);
         updateHTML(curdata);
+	saveText();
     }
-    textarea = document.getElementById('a') as HTMLTextAreaElement;
+    textarea = document.getElementById(id) as HTMLTextAreaElement;
+    textarea.value = window.localStorage.getItem(FIELDNAME);
     textarea.addEventListener('input', onTextChanged);
     curdata = initData();
     importText(curdata, textarea.value);
+    updateHTML(curdata);
 }
