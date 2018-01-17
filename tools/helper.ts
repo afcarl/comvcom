@@ -2,7 +2,7 @@
 
 const FIELDNAME = 'CommentTaggerData';
 const CHOICES = [
-    'm:Meta Info.', 'o:Object Desc.',
+    'm:Meta Info.', 'o:Value Desc.',
     'a:Precondition', 'p:Postcondition',
     't:Type/Enum/Iface', 'i:Instruction', 'g:Guide',
     'c:Comment Out', 'v:Visual Cue',
