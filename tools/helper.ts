@@ -12,7 +12,7 @@ const CHOICES = [
 var textarea: HTMLTextAreaElement = null;
 
 class Item {
-    ctype: string = null;
+    ctype: string = '';
     ung: boolean = false;
     updated: number = 0;
 
@@ -117,8 +117,9 @@ function initData(): ItemList {
         for (let k of CHOICES) {
             let i = k.indexOf(':');
             let option = document.createElement('option');
-            option.setAttribute('value', k.substr(0, i));
-            option.innerText = k.substr(i+1);
+            let v = k.substr(0, i);
+            option.setAttribute('value', v);
+            option.innerText = v+')'+k.substr(i+1);
             select.appendChild(option);
         }
         let label = document.createElement('label');
