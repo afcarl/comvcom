@@ -19,7 +19,8 @@ class Test2:
 
 # main
 def main(argv):
-    """Random docstrings."""
+    """Random
+    docstrings."""
     a = Test2() # 明白。
     if a is not None:
         # Of course a is not None.

@@ -24,9 +24,19 @@ def bisect_left(a, x):
         else: hi = mid
     return lo
 
+def nodename(node):
+    return type(node).__name__
+
+def bl(x):
+    if x:
+        return 'true'
+    else:
+        return 'false'
+
 class Source:
 
-    def __init__(self):
+    def __init__(self, tab=8):
+        self.tab = tab
         self.lines = []
         self.text = ''
         self.tokens = []
@@ -55,6 +65,20 @@ class Source:
         (row,col) = loc
         (index,_) = self.lines[row-1]
         return (index+col)
+
+    def getrow(self, index):
+        return bisect_right(self.lines, index)-1
+
+    def getcol(self, index):
+        lineno = bisect_right(self.lines, index)-1
+        (i0,_) = self.lines[lineno]
+        col = 0
+        for c in self.text[i0:index]:
+            if c == '\t':
+                col = ((c//self.tab)+1)*self.tab
+            else:
+                col += 1
+        return col
 
     def tokenize(self):
         self._i = 0
@@ -86,11 +110,18 @@ class Source:
             if isinstance(node, ast.expr) or isinstance(node, ast.stmt):
                 loc = (node.lineno, node.col_offset)
                 index = self.getindex(loc)
-                end = max(end, index+self.toklen.get(index))
+                end = max(end, index+self.toklen.get(index, 0))
             for c in ast.iter_child_nodes(node):
                 end = max(end, self.getend(c))
             self.nodeend[node] = end
         return end
+
+    def getparents(self, node):
+        nodes = []
+        while node is not None:
+            nodes.append(node)
+            node = self.parent.get(node)
+        return nodes
 
     def parse(self):
         tree = ast.parse(self.text)
@@ -98,7 +129,6 @@ class Source:
         node_end = {}
         def walk(node):
             if isinstance(node, ast.expr) or isinstance(node, ast.stmt):
-                name = type(node).__name__
                 loc = (node.lineno, node.col_offset)
                 start = self.getindex(loc)
                 self.nodestart[node] = start
@@ -153,27 +183,65 @@ class Source:
         c.sort(key=self.getlen)
         return c
 
-
-def extract(path):
-    src = Source()
-    with open(path) as fp:
-        src.load(fp)
-    src.tokenize()
-    src.parse()
-    comments = []
+# getfeats
+def getfeats(src):
     for (t,start,end) in src.tokens:
-        if t == tokenize.COMMENT:
-            comments.append((start, end))
-    for (start,end) in comments:
-        feats = {}
-        ent = CommentEntry(path, start+1, end, feats)
-        yield ent
+        if t != tokenize.COMMENT: continue
+        feats = {'type':'LineComment'}
+        feats['line'] = src.getrow(start)
+        feats['cols'] = src.getcol(start)
+        before = src.getNodesEndBefore(start)
+        if before:
+            feats['leftTypes'] = ','.join( nodename(n) for n in before )
+            feats['leftLine'] = src.getrow(src.getend(before[0]))
+        after = src.getNodesStartAfter(end)
+        if after:
+            feats['rightTypes'] = ','.join( nodename(n) for n in after )
+            feats['rightLine'] = src.getrow(src.getend(after[0]))
+        parent = None
+        for n in src.getNodesOutside(start, end):
+            if parent is None or src.getlen(n) < src.getlen(parent):
+                parent = n
+        if parent is not None:
+            parents = src.getparents(parent)
+            feats['parentTypes'] = ','.join( nodename(n) for n in parents )
+            pstart = src.getstart(parent)
+            pend = src.getend(parent)
+            feats['parentStart'] = bl(pstart == start)
+            feats['parentEnd'] = bl(pend == end)
+        yield (start, end, feats)
     return
 
 def main(argv):
-    args = argv[1:]
+    import getopt
+    def usage():
+        print('usage: %s [-d] [-t tab] [file ...]' % argv[0])
+        return 100
+    try:
+        (opts, args) = getopt.getopt(argv[1:], 'dt:')
+    except getopt.GetoptError:
+        return usage()
+    debug = 0
+    tab = 8
+    for (k, v) in opts:
+        if k == '-d': debug += 1
+        elif k == '-t': tab = int(v)
     for path in args:
-        for ent in extract(path):
-            print (ent)
+        src = Source(tab=tab)
+        with open(path) as fp:
+            src.load(fp)
+        src.tokenize()
+        src.parse()
+        prev = None
+        for (start,end,feats) in getfeats(src):
+            if prev is not None:
+                (start0,end0) = prev
+                feats['prevLine'] = src.getrow(end0)
+                feats['prevCols'] = src.getcol(start0)
+            prev = (start,end)
+            ent = CommentEntry(path, start+1, end, feats)
+            print(ent)
+            s = src.get(start+1, end).replace('\n',' ')
+            print('+ %s\n' % s)
     return
 if __name__ == '__main__': sys.exit(main(sys.argv))
