@@ -88,12 +88,55 @@ class DiscreteFeature(Feature):
 
 DF = DiscreteFeature
 
+##  DiscreteFeatureFirst
+##
+class DiscreteFeatureFirst(DiscreteFeature):
+
+    def get(self, e):
+        f = e[self.name].split(',')
+        return f[0]
+
+DF1 = DiscreteFeatureFirst
+
+##  MembershipFeature
+##
+class MembershipFeature(Feature):
+
+    def get(self, e):
+        return e[self.name].split(',')
+
+    def ident(self, arg, e):
+        return arg in self.get(e)
+
+    def split(self, ents):
+        assert 2 <= len(ents)
+        d = {}
+        for e in ents:
+            for v in self.get(e):
+                if v in d:
+                    es = d[v]
+                else:
+                    es = d[v] = set()
+                es.add(e)
+        if len(d) < 2: raise self.InvalidSplit
+        n = len(ents)
+        minsplit = minetp = None
+        for (v,es) in d.items():
+            nes = [ e for e in ents if e not in es ]
+            avgetp = (len(es)*entetp(es) + len(nes)*entetp(nes)) / n
+            if minsplit is None or avgetp < minetp:
+                minetp = avgetp
+                minsplit = (v, nes)
+        if minsplit is None: raise self.InvalidSplit
+        (arg, nes) = minsplit
+        split = [(True, list(d[arg])), (False, nes)]
+        return (minetp, arg, split)
+
+MF = MembershipFeature
+
 ##  QuantitativeFeature
 ##
 class QuantitativeFeature(Feature):
-
-    def get(self, e):
-        return e[self.name]
 
     def ident(self, arg, e):
         v = self.get(e)
