@@ -48,15 +48,16 @@ class Feature:
 
     class InvalidSplit(ValueError): pass
 
-    def __init__(self, name):
+    def __init__(self, name, attr):
         self.name = name
+        self.attr = attr
         return
 
     def __repr__(self):
         return ('<%s: %s>' % (self.__class__.__name__, self.name))
 
     def get(self, e):
-        return e[self.name]
+        return e[self.attr]
 
     def split(self, ents):
         raise NotImplementedError
@@ -93,7 +94,9 @@ DF = DiscreteFeature
 class DiscreteFeatureFirst(DiscreteFeature):
 
     def get(self, e):
-        f = e[self.name].split(',')
+        v = e[self.attr]
+        if v is None: return None
+        f = v.split(',')
         return f[0]
 
 DF1 = DiscreteFeatureFirst
@@ -103,7 +106,9 @@ DF1 = DiscreteFeatureFirst
 class MembershipFeature(Feature):
 
     def get(self, e):
-        return e[self.name].split(',')
+        v = e[self.attr]
+        if v is None: return []
+        return v.split(',')
 
     def ident(self, arg, e):
         return arg in self.get(e)
@@ -123,6 +128,7 @@ class MembershipFeature(Feature):
         minsplit = minetp = None
         for (v,es) in d.items():
             nes = [ e for e in ents if e not in es ]
+            if not nes: continue
             avgetp = (len(es)*entetp(es) + len(nes)*entetp(nes)) / n
             if minsplit is None or avgetp < minetp:
                 minetp = avgetp
@@ -197,7 +203,7 @@ class TreeBranch:
         ind = '  '*depth
         print ('%sBranch %r: %r' % (ind, self.feature, self.arg))
         for (v,branch) in self.children.items():
-            print ('%s Value: %r' % (ind, v))
+            print ('%s Value: %r ->' % (ind, v))
             branch.dump(depth+1)
         return
 
@@ -225,18 +231,26 @@ class TreeLeaf:
 ##
 class TreeBuilder:
 
-    FEATURES = (
-        DF('type'),
-        QF('deltaLine'),
-        QF('deltaCols'),
-    )
+    FEATURES = [
+        DF('type', 'type'),
+        QF('deltaLine', 'deltaLine'),
+        QF('deltaCols', 'deltaCols'),
+        DF('parentStart', 'parentStart'),
+        DF('parentEnd', 'parentEnd'),
+        DF1('parentTypes1', 'parentTypes'),
+        MF('parentTypesA', 'parentTypes'),
+        DF1('leftTypes1', 'leftTypes'),
+        MF('leftTypesA', 'leftTypes'),
+        DF1('rightTypes1', 'rightTypes'),
+        MF('rightTypesA', 'rightTypes'),
+    ]
 
     name2feat = { feat.name: feat for feat in FEATURES }
 
-    def __init__(self, names, minkeys=2, minent=0.01, debug=1):
-        self.features = [ self.getfeat(name) for name in names ]
+    def __init__(self, minkeys=10, minetp=0.05, debug=1):
+        self.features = []
         self.minkeys = minkeys
-        self.minent = minent
+        self.minetp = minetp
         self.debug = debug
         return
 
@@ -244,15 +258,24 @@ class TreeBuilder:
     def getfeat(klass, name):
         return klass.name2feat[name]
 
+    def addfeat(self, name):
+        self.features.append(self.getfeat(name))
+        return
+
     def build(self, ents, depth=0):
         keys = countkeys(ents)
         etp = calcetp(keys)
         ind = '  '*depth
         if self.debug:
             print ('%sBuild: %r, etp=%.3f' % (ind, keys, etp))
-        if len(ents) < 2: return None
-        if len(keys) < self.minkeys: return None
-        if etp < self.minent: return None
+        if etp < self.minetp:
+            if self.debug:
+                print ('%s Too little entropy. Stopping.' % ind)
+            return None
+        if len(ents) < self.minkeys:
+            if self.debug:
+                print ('%s Too few keys. Stopping.' % ind)
+            return None
         minbranch = minetp = None
         for feat in self.features:
             try:
@@ -262,21 +285,27 @@ class TreeBuilder:
             if minbranch is None or etp < minetp:
                 minetp = etp
                 minbranch = (feat, arg, split)
-        if minbranch is None: return None
+        if minbranch is None:
+            if self.debug:
+                print ('%s No discerning feature. Stopping.' % ind)
+            return None
         (feat, arg, split) = minbranch
         if self.debug:
             print ('%sFeature: %r, arg=%r, etp=%.3f' % (ind, feat, arg, etp))
         children = {}
         for (i,(v,es)) in enumerate(split):
             if 2 <= self.debug:
-                r = [ (e[feat.name], e.key) for e in es ]
+                r = [ (e[feat.attr], e.key) for e in es ]
                 print ('%s Split%d (%d): %r, %r' % (ind, i, len(r), v, r))
+            if self.debug:
+                print ('%s Value: %r ->' % (ind, v))
             branch = self.build(es, depth+1)
             if branch is None:
                 keys = countkeys(es)
+                best = bestkey(keys)
                 if self.debug:
-                    print ('%s Leaf: %r' % (ind, keys))
-                branch = TreeLeaf(bestkey(keys))
+                    print ('%s Leaf: %r -> %r' % (ind, v, best))
+                branch = TreeLeaf(best)
             children[v] = branch
         return TreeBranch(feat, arg, children)
 
@@ -305,32 +334,47 @@ def main(argv):
     import getopt
     import fileinput
     def usage():
-        print('usage: %s [-d] [-f feats] [file ...]' % argv[0])
+        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [file ...]' % argv[0])
         return 100
     try:
-        (opts, args) = getopt.getopt(argv[1:], 'dB:f:')
+        (opts, args) = getopt.getopt(argv[1:], 'dB:m:f:')
     except getopt.GetoptError:
         return usage()
     debug = 0
     srcdb = None
+    minkeys = 10
     feats = None
     for (k, v) in opts:
         if k == '-d': debug += 1
         elif k == '-B': srcdb = SourceDB(v)
+        elif k == '-m': minkeys = int(v)
         elif k == '-f': feats = v
+    builder = TreeBuilder(minkeys=minkeys, debug=debug)
 
     fp = fileinput.input(args)
     ents = []
     for e in CommentEntry.load(fp):
-        e.key = e['key'][0]
+        e.key = e['key'][1]
         e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
         e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
         ents.append(e)
-    builder = TreeBuilder(['type', 'deltaLine', 'deltaCols'], debug=debug)
+    builder.addfeat('type')
+    #builder.addfeat('deltaLine')
+    #builder.addfeat('deltaCols')
+    builder.addfeat('parentStart')
+    builder.addfeat('parentEnd')
+    builder.addfeat('parentTypes1')
+    builder.addfeat('parentTypesA')
+    builder.addfeat('leftTypes1')
+    builder.addfeat('leftTypesA')
+    builder.addfeat('rightTypes1')
+    builder.addfeat('rightTypesA')
+
     if feats is None:
         # training
         root = builder.build(ents)
         if debug:
+            print()
             root.dump()
         print (export_tree(root))
     else:
