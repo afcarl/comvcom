@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 import ast
 import tokenize
@@ -50,8 +50,7 @@ class Source:
 
     def load(self, fp):
         for line in fp:
-            if u'' is not '':
-                line = line.decode('utf-8')
+            line = line.decode('utf-8')
             line = line.replace(u'\ufeff',u'').replace(u'\ufffe',u'').replace('\r','')
             self.lines.append((len(self.text), line))
             self.text += line
@@ -235,13 +234,13 @@ def main(argv):
         elif k == '-t': tab = int(v)
     for path in args:
         src = Source(tab=tab)
-        with open(path) as fp:
-            src.load(fp)
         try:
-            src.tokenize()
-            src.parse()
-        except SyntaxError as e:
-            print('!', path)
+            with open(path) as fp:
+                src.load(fp)
+                src.tokenize()
+                src.parse()
+        except (UnicodeError, SyntaxError, tokenize.TokenError) as e:
+            sys.stderr.write('! %s\n' % path)
             continue
         prev = None
         for (start,end,feats) in getfeats(src):
@@ -253,6 +252,6 @@ def main(argv):
             ent = CommentEntry(path, start+1, end, feats)
             print(ent)
             s = src.get(start+1, end).replace('\n',' ')
-            print('+ %s\n' % s)
+            print('+ %s\n' % s.encode('utf-8'))
     return
 if __name__ == '__main__': sys.exit(main(sys.argv))
