@@ -75,7 +75,7 @@ class Source:
         col = 0
         for c in self.text[i0:index]:
             if c == '\t':
-                col = ((c//self.tab)+1)*self.tab
+                col = ((col//self.tab)+1)*self.tab
             else:
                 col += 1
         return col
@@ -127,22 +127,29 @@ class Source:
         tree = ast.parse(self.text)
         node_start = {}
         node_end = {}
+        def add(node, start, end):
+            self.nodestart[node] = start
+            if start in node_start:
+                a = node_start[start]
+            else:
+                a = node_start[start] = []
+            a.append(node)
+            if end in node_end:
+                a = node_end[end]
+            else:
+                a = node_end[end] = []
+            a.append(node)
+            return
         def walk(node):
-            if isinstance(node, ast.expr) or isinstance(node, ast.stmt):
+            if isinstance(node, ast.Module):
+                start = 0
+                end = len(self.text)
+                add(node, start, end)
+            elif isinstance(node, ast.expr) or isinstance(node, ast.stmt):
                 loc = (node.lineno, node.col_offset)
                 start = self.getindex(loc)
-                self.nodestart[node] = start
                 end = self.getend(node)
-                if start in node_start:
-                    a = node_start[start]
-                else:
-                    a = node_start[start] = []
-                a.append(node)
-                if end in node_end:
-                    a = node_end[end]
-                else:
-                    a = node_end[end] = []
-                a.append(node)
+                add(node, start, end)
             for c in ast.iter_child_nodes(node):
                 self.parent[c] = node
                 walk(c)
@@ -230,8 +237,12 @@ def main(argv):
         src = Source(tab=tab)
         with open(path) as fp:
             src.load(fp)
-        src.tokenize()
-        src.parse()
+        try:
+            src.tokenize()
+            src.parse()
+        except SyntaxError as e:
+            print('!', path)
+            continue
         prev = None
         for (start,end,feats) in getfeats(src):
             if prev is not None:
