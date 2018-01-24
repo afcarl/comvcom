@@ -27,18 +27,27 @@ public class TestCoreNLP {
 	}
 	pipeline.annotate(annotation);
 
-	//pipeline.prettyPrint(annotation, out);
+	//pipeline.prettyPrint(annotation, System.out);
 	//pipeline.xmlPrint(annotation, System.out);
 
 	List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
 	for (CoreMap sentence : sentences) {
+	    List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+	    if (tokens != null) {
+		for (CoreLabel token : tokens) {
+		    String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
+		    System.out.println(pos);
+		}
+	    }
 	    Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
-	    System.out.println("parse:");
-	    tree.pennPrint(System.out);
-	    doit(tree, 0);
-	    System.out.println();
+	    if (tree != null) {
+		System.out.println("parse:");
+		tree.pennPrint(System.out);
+		doit(tree, 0);
+		System.out.println();
+	    }
 	}
-    
+
     }
 
     private static void doit(Tree tree, int level) {

@@ -23,7 +23,7 @@ public class CommentTextParser {
     public Tree[] parse(String text) {
 	Annotation annotation = new Annotation(text);
 	_pipeline.annotate(annotation);
-	//_pipeline.prettyPrint(annotation, out);
+	//_pipeline.prettyPrint(annotation, System.out);
 	//_pipeline.xmlPrint(annotation, System.out);
 	List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
 	Tree[] trees = new Tree[sentences.size()];
