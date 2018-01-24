@@ -13,9 +13,9 @@ from comment import CommentEntry
 from srcdb import SourceDB
 
 
-def calcetp(keys):
-    n = sum(keys.values())
-    etp = sum( v*log2(n/v) for v in keys.values() ) / n
+def calcetp(values):
+    n = sum(values)
+    etp = sum( v*log2(n/v) for v in values ) / n
     return etp
 
 def countkeys(ents):
@@ -39,7 +39,7 @@ def bestkey(keys):
     return maxkey
 
 def entetp(ents):
-    return calcetp(countkeys(ents))
+    return calcetp(countkeys(ents).values())
 
 
 ##  Feature
@@ -69,6 +69,10 @@ class Feature:
 ##
 class DiscreteFeature(Feature):
 
+    def __init__(self, attr, prefix='DF:'):
+        Feature.__init__(self, prefix+attr, attr)
+        return
+
     def ident(self, arg, e):
         return self.get(e)
 
@@ -93,6 +97,10 @@ DF = DiscreteFeature
 ##
 class DiscreteFeatureFirst(DiscreteFeature):
 
+    def __init__(self, attr, prefix='DF1:'):
+        DiscreteFeature.__init__(self, attr, prefix)
+        return
+
     def get(self, e):
         v = e[self.attr]
         if v is None: return None
@@ -104,6 +112,10 @@ DF1 = DiscreteFeatureFirst
 ##  MembershipFeature
 ##
 class MembershipFeature(Feature):
+
+    def __init__(self, attr, prefix='MF:'):
+        Feature.__init__(self, prefix+attr, attr)
+        return
 
     def get(self, e):
         v = e[self.attr]
@@ -143,6 +155,10 @@ MF = MembershipFeature
 ##  QuantitativeFeature
 ##
 class QuantitativeFeature(Feature):
+
+    def __init__(self, attr, prefix='QF:'):
+        Feature.__init__(self, prefix+attr, attr)
+        return
 
     def ident(self, arg, e):
         v = self.get(e)
@@ -232,31 +248,31 @@ class TreeLeaf:
 class TreeBuilder:
 
     FEATURES = [
-        DF('type', 'type'),
-        QF('deltaLine', 'deltaLine'),
-        QF('deltaCols', 'deltaCols'),
-        DF('parentStart', 'parentStart'),
-        DF('parentEnd', 'parentEnd'),
-        DF1('parentTypes1', 'parentTypes'),
-        MF('parentTypesA', 'parentTypes'),
-        DF1('leftTypes1', 'leftTypes'),
-        MF('leftTypesA', 'leftTypes'),
-        DF1('rightTypes1', 'rightTypes'),
-        MF('rightTypesA', 'rightTypes'),
+        DF('type'),
+        QF('deltaLine'),
+        QF('deltaCols'),
+        DF('parentStart'),
+        DF('parentEnd'),
+        DF1('parentTypes'),
+        MF('parentTypes'),
+        DF1('leftTypes'),
+        MF('leftTypes'),
+        DF1('rightTypes'),
+        MF('rightTypes'),
     ]
 
     name2feat = { feat.name: feat for feat in FEATURES }
 
-    def __init__(self, minkeys=10, minetp=0.05, debug=1):
+    @classmethod
+    def getfeat(klass, name):
+        return klass.name2feat[name]
+
+    def __init__(self, minkeys=10, minetp=0.10, debug=1):
         self.features = []
         self.minkeys = minkeys
         self.minetp = minetp
         self.debug = debug
         return
-
-    @classmethod
-    def getfeat(klass, name):
-        return klass.name2feat[name]
 
     def addfeat(self, name):
         self.features.append(self.getfeat(name))
@@ -264,7 +280,7 @@ class TreeBuilder:
 
     def build(self, ents, depth=0):
         keys = countkeys(ents)
-        etp = calcetp(keys)
+        etp = calcetp(keys.values())
         ind = '  '*depth
         if self.debug:
             print ('%sBuild: %r, etp=%.3f' % (ind, keys, etp))
@@ -358,17 +374,17 @@ def main(argv):
         e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
         e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
         ents.append(e)
-    builder.addfeat('type')
-    #builder.addfeat('deltaLine')
-    #builder.addfeat('deltaCols')
-    builder.addfeat('parentStart')
-    builder.addfeat('parentEnd')
-    builder.addfeat('parentTypes1')
-    builder.addfeat('parentTypesA')
-    builder.addfeat('leftTypes1')
-    builder.addfeat('leftTypesA')
-    builder.addfeat('rightTypes1')
-    builder.addfeat('rightTypesA')
+    builder.addfeat('QF:deltaLine')
+    builder.addfeat('QF:deltaCols')
+    builder.addfeat('DF:type')
+    builder.addfeat('DF:parentStart')
+    builder.addfeat('DF:parentEnd')
+    builder.addfeat('DF1:parentTypes')
+    builder.addfeat('MF:parentTypes')
+    builder.addfeat('DF1:leftTypes')
+    builder.addfeat('MF:leftTypes')
+    builder.addfeat('DF1:rightTypes')
+    builder.addfeat('MF:rightTypes')
 
     if feats is None:
         # training
