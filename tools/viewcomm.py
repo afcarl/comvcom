@@ -60,7 +60,8 @@ def show(cid, src, start, end, key, url=None, ncontext=4):
         lineno1 = max(linenos)+1
         print('<div class=src><div class=head>%s:' % (cid))
         print('<span id="%s" class=ui> </span>' % (cid))
-        print('<a href="%s#L%d-L%d">%s</a></div>' % (q(url), lineno0, lineno1, name))
+        print('<a target="original" href="%s#L%d-L%d">%s</a></div>' %
+              (q(url), lineno0, lineno1, name))
         if key is not None:
             print('<div class=key>key=%s</div>' % (q(key)))
         print('<pre>')
