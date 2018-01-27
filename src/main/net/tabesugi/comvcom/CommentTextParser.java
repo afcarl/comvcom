@@ -20,65 +20,85 @@ public class CommentTextParser {
 	_pipeline = new StanfordCoreNLP(props);
     }
 
-    public Tree[] parse(String text) {
+    public CoreMap parse(String text) {
 	Annotation annotation = new Annotation(text);
 	_pipeline.annotate(annotation);
 	//_pipeline.prettyPrint(annotation, System.out);
 	//_pipeline.xmlPrint(annotation, System.out);
+	// Only returns the first sentence.
 	List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
-	Tree[] trees = new Tree[sentences.size()];
-	for (int i = 0; i < sentences.size(); i++) {
-	    CoreMap sentence = sentences.get(i);
-	    trees[i] = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
-	}
-	return trees;
+	if (sentences.size() == 0) return null;
+	return sentences.get(0);
     }
 
-    public static String flatten(Tree tree) {
-	assert !tree.isLeaf();
-	Label label = tree.label();
-	assert label != null;
-	String value = label.value();
-	assert value != null;
-	String s = "("+value;
-	for (Tree child : tree.children()) {
-	    if (!child.isLeaf()) {
-		s += flatten(child);
+    public static String getWords(CoreMap sentence) {
+	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+	List<String> syms = new ArrayList<String>();
+	for (CoreLabel token : tokens) {
+	    String word = token.getString(CoreAnnotations.TextAnnotation.class);
+	    if (Utils.isLetter(word)) {
+		syms.add(word.toLowerCase());
 	    }
 	}
-	return s+")";
+	return Utils.join(",", syms);
+    }
+
+    public static String getPos(CoreMap sentence) {
+	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+	List<String> syms = new ArrayList<String>();
+	for (CoreLabel token : tokens) {
+	    String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
+	    syms.add(pos);
+	}
+	return Utils.join(",", syms);
+    }
+
+    public static String flatten(CoreMap sentence, int level) {
+	Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+	List<String> syms = new ArrayList<String>();
+	visit(syms, tree, level);
+	return Utils.join(",", syms);
+    }
+
+    public static void visit(List<String> syms, Tree tree, int level) {
+	if (!tree.isLeaf()) {
+	    for (Tree child : tree.children()) {
+		if (level == 0) {
+		    Label label = child.label();
+		    String value = label.value();
+		    syms.add(value);
+		} else {
+		    visit(syms, child, level-1);
+		}
+	    }
+	}
     }
 
     public static void main(String[] args)
 	throws IOException {
 
+	SourceDB src = new SourceDB(args[0]);
 	CommentTextParser parser = new CommentTextParser();
-	for (int i = 0; i < args.length; i++) {
+	for (int i = 1; i < args.length; i++) {
 	    String path = args[i];
 	    BufferedReader reader = new BufferedReader(new FileReader(path));
-	    CommentEntry entry = null;
 	    while (true) {
 		String line = reader.readLine();
 		if (line == null) break;
 		if (line.startsWith("@")) {
-		    if (entry != null) {
-			System.out.println(entry);
-			System.out.println();
+		    CommentEntry entry = new CommentEntry(line);
+		    String text = src.getText(entry.path, entry.start, entry.end);
+		    CoreMap sentence = parser.parse(text);
+		    if (sentence != null) {
+			entry.feats.put("words", getWords(sentence));
+			entry.feats.put("posTags", getPos(sentence));
+			entry.feats.put("parseLevel1", flatten(sentence, 0));
+			entry.feats.put("parseLevel2", flatten(sentence, 1));
 		    }
-		    entry = new CommentEntry(line);
-		} else if (line.startsWith("+")) {
-		    if (entry != null) {
-			String text = line.substring(2);
-			Tree[] trees = parser.parse(text);
-			for (Tree tree : trees) {
-			    entry.feats.put("parseTree", flatten(tree));
-			}
-		    }
+
+		    System.out.println(entry);
+		    System.out.println();
 		}
-	    }
-	    if (entry != null) {
-		System.out.println(entry);
-		System.out.println();
 	    }
 	}
     }

@@ -2,6 +2,7 @@
 //
 package net.tabesugi.comvcom;
 import java.io.*;
+import java.util.*;
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
@@ -48,6 +49,27 @@ public class Utils {
 	return join(",", text.split("\\W+"));
     }
 
+    public static boolean isLetter(String text) {
+	for (char c : text.toCharArray()) {
+	    if (!Character.isLetter(c)) return false;
+	}
+	return true;
+    }
+
+    public static String join(String delim, List<String> words) {
+	String s = null;
+	for (String w : words) {
+	    if (w.length() == 0) {
+		;
+	    } else if (s == null) {
+		s = w;
+	    } else {
+		s += delim+w;
+	    }
+	}
+	return s;
+    }
+
     public static String join(String delim, String[] words) {
 	String s = null;
 	for (String w : words) {
@@ -65,6 +87,19 @@ public class Utils {
     public static String readFile(String path)
 	throws IOException {
 	BufferedReader reader = new BufferedReader(new FileReader(path));
+	String text = "";
+	while (true) {
+	    String line = reader.readLine();
+	    if (line == null) break;
+	    text += line+"\n";
+	}
+	reader.close();
+	return text;
+    }
+
+    public static String readFile(File file)
+	throws IOException {
+	BufferedReader reader = new BufferedReader(new FileReader(file));
 	String text = "";
 	while (true) {
 	    String line = reader.readLine();
