@@ -277,11 +277,10 @@ public class CommentExtractor extends ASTVisitor {
 		    feats1.put("prevLine", line0);
 		    feats1.put("prevCols", cols0);
 		}
-		CommentEntry comm = new CommentEntry(path, start1, end1, feats1);
+                List<Span> spans = new ArrayList<Span>();
+                spans.add(new Span(start1, end1));
+		CommentEntry comm = new CommentEntry(path, spans, feats1);
 		out.println(comm);
-		String s = src.getText(start1, end1);
-		out.println("+ "+s.replace("\n", " "));
-		out.println();
 		node0 = node1;
 	    }
 	}

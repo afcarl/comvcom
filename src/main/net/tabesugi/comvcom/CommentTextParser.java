@@ -87,7 +87,7 @@ public class CommentTextParser {
 		if (line == null) break;
 		if (line.startsWith("@")) {
 		    CommentEntry entry = new CommentEntry(line);
-		    String text = src.getText(entry.path, entry.start, entry.end);
+		    String text = src.getText(entry.path, entry.spans);
 		    CoreMap sentence = parser.parse(text);
 		    if (sentence != null) {
 			entry.feats.put("words", getWords(sentence));

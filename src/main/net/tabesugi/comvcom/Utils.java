@@ -56,9 +56,10 @@ public class Utils {
 	return true;
     }
 
-    public static String join(String delim, List<String> words) {
+    public static String join(String delim, List<? extends Object> objs) {
 	String s = null;
-	for (String w : words) {
+	for (Object obj : objs) {
+            String w = obj.toString();
 	    if (w.length() == 0) {
 		;
 	    } else if (s == null) {
