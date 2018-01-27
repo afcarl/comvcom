@@ -65,6 +65,16 @@
     </java>
   </target>
 
+  <target name="runparse" depends="build">
+    <java classname="net.tabesugi.comvcom.CommentTextParser">
+      <jvmarg value="-ea" />
+      <arg value="." />
+      <arg value="tests/Test1.comm" />
+      <classpath location="${buildDir}" />
+      <classpath refid="build.classpath"/>
+    </java>
+  </target>
+
   <target name="test" depends="build">
     <junit fork="true">
       <jvmarg value="-ea" />
@@ -75,8 +85,7 @@
     </junit>
   </target>
 
-  <target name="testnlp" depends="build">
-    <mkdir dir="${tmpDir}" />
+  <target name="testparse" depends="build">
     <java classname="TestCoreNLP">
       <jvmarg value="-ea" />
       <arg value="This is insane." />
