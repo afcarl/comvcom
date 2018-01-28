@@ -162,18 +162,28 @@ class QuantitativeFeature(Feature):
 
     def ident(self, arg, e):
         v = self.get(e)
-        if v < arg:
+        if v is None:
+            return 'un'
+        elif v < arg:
             return 'lt'
         else:
             return 'ge'
 
     def split(self, ents):
         assert 2 <= len(ents)
-        pairs = [ (e, self.get(e)) for e in ents ]
+        pairs = []
+        undefs = []
+        for e in ents:
+            v = self.get(e)
+            if v is None:
+                undefs.append(e)
+            else:
+                pairs.append((e, v))
+        if not pairs: raise self.InvalidSplit
         pairs.sort(key=(lambda ev: ev[1]))
         es = [ e for (e,_) in pairs ]
         vs = [ v for (_,v) in pairs ]
-        n = len(ents)
+        n = len(pairs)
         minsplit = minetp = None
         v0 = vs[0]
         for i in range(1, n):
@@ -187,6 +197,8 @@ class QuantitativeFeature(Feature):
         if minsplit is None: raise self.InvalidSplit
         arg = vs[minsplit]
         split = [('lt', es[:minsplit]), ('ge', es[minsplit:])]
+        if undefs:
+            split.append(('un', undefs))
         return (minetp, arg, split)
 
 QF = QuantitativeFeature
@@ -251,6 +263,8 @@ class TreeBuilder:
         DF('type'),
         QF('deltaLine'),
         QF('deltaCols'),
+        QF('deltaLeft'),
+        QF('deltaRight'),
         DF('parentStart'),
         DF('parentEnd'),
         DF1('parentTypes'),
@@ -350,32 +364,45 @@ def main(argv):
     import getopt
     import fileinput
     def usage():
-        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [file ...]' % argv[0])
+        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [-k keyprop] [file ...]' % argv[0])
         return 100
     try:
-        (opts, args) = getopt.getopt(argv[1:], 'dB:m:f:')
+        (opts, args) = getopt.getopt(argv[1:], 'dB:m:f:k:')
     except getopt.GetoptError:
         return usage()
     debug = 0
     srcdb = None
     minkeys = 10
     feats = None
+    keyprop = 'key'
     for (k, v) in opts:
         if k == '-d': debug += 1
         elif k == '-B': srcdb = SourceDB(v)
         elif k == '-m': minkeys = int(v)
         elif k == '-f': feats = v
+        elif k == '-k': keyprop = v
     builder = TreeBuilder(minkeys=minkeys, debug=debug)
 
     fp = fileinput.input(args)
     ents = []
     for e in CommentEntry.load(fp):
-        e.key = e['key'][1]
-        e['deltaLine'] = int(e['line']) - int(e.get('prevLine',0))
-        e['deltaCols'] = int(e['cols']) - int(e.get('prevCols',0))
+        e.key = e[keyprop]
+        assert e.key is not None
+        line = int(e['line'])
+        cols = int(e['cols'])
+        if 'prevLine' in e:
+            e['deltaLine'] = line - int(e['prevLine'])
+        if 'prevCols' in e:
+            e['deltaCols'] = line - int(e['prevCols'])
+        if 'leftLine' in e:
+            e['deltaLeft'] = line - int(e['leftLine'])
+        if 'rightLine' in e:
+            e['deltaRight'] = line - int(e['rightLine'])
         ents.append(e)
     builder.addfeat('QF:deltaLine')
     builder.addfeat('QF:deltaCols')
+    builder.addfeat('QF:deltaLeft')
+    builder.addfeat('QF:deltaRight')
     builder.addfeat('DF:type')
     builder.addfeat('DF:parentStart')
     builder.addfeat('DF:parentEnd')
