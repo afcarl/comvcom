@@ -11,9 +11,9 @@ class CommentEntry:
         return
 
     def __repr__(self):
-        return ('<%s(%r): path=%r, start=%r, end=%r, feats=%r>' %
+        return ('<%s(%r): path=%r, spans=%r, feats=%r>' %
                 (self.__class__.__name__, self.key,
-                 self.path, self.start, self.end, self.feats))
+                 self.path, self.spans, self.feats))
 
     def __str__(self):
         spans = ','.join( '%d:%d' % (s,e) for (s,e) in self.spans )
@@ -33,11 +33,12 @@ class CommentEntry:
     def get(self, k, v=None):
         return self.feats.get(k, v)
 
+    def items(self):
+        return self.feats.items()
+
     def merge(self, entry):
         assert self.path == entry.path
-        assert self.start == entry.start
-        assert self.end == entry.end
-        self.feats.update(entry.feats)
+        self.spans.extend(entry.spans)
         return
 
     @classmethod

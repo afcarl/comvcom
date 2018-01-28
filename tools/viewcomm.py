@@ -31,7 +31,7 @@ def show(cid, src, spans, key, url=None, ncontext=4):
     ranges = [(s,e,True) for (s,e) in spans]
     if url is None:
         print('# %s:' % cid)
-        print('@ %s %d %d key=%s' % (src.name, start, end, key))
+        print('@ %s %r key=%s' % (src.name, spans, key))
         for (_,line) in src.show(ranges, ncontext=ncontext):
             print('  '+line, end='')
         print()

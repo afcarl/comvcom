@@ -292,6 +292,14 @@ class TreeBuilder:
         self.features.append(self.getfeat(name))
         return
 
+    def import_tree(self, tree):
+        if isinstance(tree, tuple):
+            (name, arg, children) = tree
+            children = { v: self.import_tree(branch) for (v,branch) in children }
+            return TreeBranch(self.getfeat(name), arg, children)
+        else:
+            return TreeLeaf(tree)
+
     def build(self, ents, depth=0):
         keys = countkeys(ents)
         etp = calcetp(keys.values())
@@ -349,15 +357,6 @@ def export_tree(tree):
     else:
         return (tree.key)
 
-# import_tree
-def import_tree(builder, tree):
-    if isinstance(tree, tuple):
-        (name, arg, children) = tree
-        children = { v: import_tree(builder, branch) for (v,branch) in children }
-        return TreeBranch(builder.getfeat(name), arg, children)
-    else:
-        return TreeLeaf(tree)
-
 
 # main
 def main(argv):
@@ -393,7 +392,7 @@ def main(argv):
         if 'prevLine' in e:
             e['deltaLine'] = line - int(e['prevLine'])
         if 'prevCols' in e:
-            e['deltaCols'] = line - int(e['prevCols'])
+            e['deltaCols'] = cols - int(e['prevCols'])
         if 'leftLine' in e:
             e['deltaLeft'] = line - int(e['leftLine'])
         if 'rightLine' in e:
@@ -424,7 +423,7 @@ def main(argv):
         # testing
         with open(feats) as fp:
             data = eval(fp.read())
-        tree = import_tree(builder, data)
+        tree = builder.import_tree(data)
         correct = 0
         for e in ents:
             key = tree.test(e)
@@ -433,7 +432,7 @@ def main(argv):
             elif srcdb is not None:
                 print (key, e)
                 src = srcdb.get(e.path)
-                ranges = [(e.start, e.end, 1)]
+                ranges = [(s,e,1) for (s,e) in e.spans]
                 for (_,line) in src.show(ranges):
                     print(line, end='')
                 print()
