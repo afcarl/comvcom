@@ -3,10 +3,9 @@ import sys
 
 class CommentEntry:
 
-    def __init__(self, path, start, end, feats, key=None):
+    def __init__(self, path, spans, feats, key=None):
         self.path = path
-        self.start = start
-        self.end = end
+        self.spans = spans
         self.feats = feats
         self.key = key
         return
@@ -17,9 +16,9 @@ class CommentEntry:
                  self.path, self.start, self.end, self.feats))
 
     def __str__(self):
+        spans = ','.join( '%d:%d' % (s,e) for (s,e) in self.spans )
         feats = ' '.join( '%s=%s' % (k,v) for (k,v) in self.feats.items() )
-        return ('@ %s %d %d %s' %
-                (self.path, self.start, self.end, feats))
+        return ('@ %s %s %s' % (self.path, spans, feats))
 
     def __getitem__(self, k):
         return self.feats.get(k)
@@ -27,6 +26,9 @@ class CommentEntry:
     def __setitem__(self, k, v):
         self.feats[k] = v
         return
+
+    def __contains__(self, k):
+        return k in self.feats
 
     def get(self, k, v=None):
         return self.feats.get(k, v)
@@ -43,13 +45,16 @@ class CommentEntry:
         if not line.startswith('@'): raise ValueError(line)
         (_,_,line) = line.partition(' ')
         (path,_,line) = line.partition(' ')
-        (start,_,line) = line.partition(' ')
-        (end,_,line) = line.partition(' ')
+        (ss,_,line) = line.partition(' ')
+        spans = []
+        for x in ss.split(','):
+            (s,_,e) = x.partition(':')
+            spans.append((int(s), int(e)))
         feats = {}
         for x in line.split(' '):
             (k,_,v) = x.partition('=')
             feats[k] = v
-        return klass(path, int(start), int(end), feats)
+        return klass(path, spans, feats)
 
     @classmethod
     def load(klass, fp):

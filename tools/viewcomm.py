@@ -27,8 +27,8 @@ pre { margin: 1em; background: #eeeeee; }
     print('<textarea id="a" cols="80" rows="4" spellcheck="false" autocomplete="off"></textarea>')
     return
 
-def show(cid, src, start, end, key, url=None, ncontext=4):
-    ranges = [(start, end, True)]
+def show(cid, src, spans, key, url=None, ncontext=4):
+    ranges = [(s,e,True) for (s,e) in spans]
     if url is None:
         print('# %s:' % cid)
         print('@ %s %d %d key=%s' % (src.name, start, end, key))
@@ -104,7 +104,7 @@ def main(argv):
         if html and srcmap is not None:
             url = srcmap.geturl(e.path)
         cid = 'c%03d' % index
-        show(cid, src, e.start, e.end, e.key, url=url, ncontext=ncontext)
+        show(cid, src, e.spans, e.key, url=url, ncontext=ncontext)
         index += 1
 
     return 0
