@@ -152,6 +152,21 @@ class MembershipFeature(Feature):
 
 MF = MembershipFeature
 
+##  MembershipFeatureOne
+##
+class MembershipFeatureOne(MembershipFeature):
+
+    def __init__(self, attr, prefix='MF1:'):
+        MembershipFeature.__init__(self, attr, prefix)
+        return
+
+    def get(self, e):
+        v = e[self.attr]
+        if v is None: return []
+        return [v.split(',')[0]]
+
+MF1 = MembershipFeatureOne
+
 ##  QuantitativeFeature
 ##
 class QuantitativeFeature(Feature):
@@ -259,49 +274,22 @@ class TreeLeaf:
 ##
 class TreeBuilder:
 
-    FEATURES = [
-        DF('type'),
-        QF('deltaLine'),
-        QF('deltaCols'),
-        QF('deltaLeft'),
-        QF('deltaRight'),
-        DF('parentStart'),
-        DF('parentEnd'),
-        DF1('parentTypes'),
-        MF('parentTypes'),
-        DF1('leftTypes'),
-        MF('leftTypes'),
-        DF1('rightTypes'),
-        MF('rightTypes'),
-        DF('codeLike'),
-        DF1('words'),
-        MF('words'),
-        DF1('posTags'),
-        MF('posTags'),
-    ]
-
-    name2feat = { feat.name: feat for feat in FEATURES }
-
-    @classmethod
-    def getfeat(klass, name):
-        return klass.name2feat[name]
-
     def __init__(self, minkeys=10, minetp=0.10, debug=1):
-        self.features = []
+        self.features = {}
         self.minkeys = minkeys
         self.minetp = minetp
         self.debug = debug
         return
 
-    def addfeat(self, name):
-        self.features.append(self.getfeat(name))
+    def addfeat(self, feat):
+        self.features[feat.name] = feat
         return
 
     def import_tree(self, tree):
         if isinstance(tree, tuple):
             (name, arg, children) = tree
             children = { v: self.import_tree(branch) for (v,branch) in children }
-            return TreeBranch(self.getfeat(name), arg, children)
+            return TreeBranch(self.features[name], arg, children)
         else:
             return TreeLeaf(tree)
 
@@ -320,7 +308,7 @@ class TreeBuilder:
                 print ('%s Too few keys. Stopping.' % ind)
             return None
         minbranch = minetp = None
-        for feat in self.features:
+        for feat in self.features.values():
             try:
                 (etp, arg, split) = feat.split(ents)
             except Feature.InvalidSplit:
@@ -368,7 +356,8 @@ def main(argv):
     import getopt
     import fileinput
     def usage():
-        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [-k keyprop] [file ...]' % argv[0])
+        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [-k keyprop] [file ...]' %
+              argv[0])
         return 100
     try:
         (opts, args) = getopt.getopt(argv[1:], 'dB:m:f:k:')
@@ -386,6 +375,23 @@ def main(argv):
         elif k == '-f': feats = v
         elif k == '-k': keyprop = v
     builder = TreeBuilder(minkeys=minkeys, debug=debug)
+    builder.addfeat(DF('type'))
+    builder.addfeat(QF('deltaLine'))
+    builder.addfeat(QF('deltaCols'))
+    builder.addfeat(QF('deltaLeft'))
+    builder.addfeat(QF('deltaRight'))
+    builder.addfeat(DF('parentStart'))
+    builder.addfeat(DF('parentEnd'))
+    builder.addfeat(DF1('parentTypes'))
+    builder.addfeat(MF('parentTypes'))
+    builder.addfeat(DF1('leftTypes'))
+    builder.addfeat(MF('leftTypes'))
+    builder.addfeat(DF1('rightTypes'))
+    builder.addfeat(MF('rightTypes'))
+    builder.addfeat(DF('codeLike'))
+    builder.addfeat(DF1('posTags'))
+    builder.addfeat(MF('posTags'))
+    builder.addfeat(MF1('words'))
 
     fp = fileinput.input(args)
     ents = []
@@ -403,24 +409,6 @@ def main(argv):
         if 'rightLine' in e:
             e['deltaRight'] = line - int(e['rightLine'])
         ents.append(e)
-    # builder.addfeat('QF:deltaLine')
-    # builder.addfeat('QF:deltaCols')
-    # builder.addfeat('QF:deltaLeft')
-    # builder.addfeat('QF:deltaRight')
-    builder.addfeat('DF:type')
-    builder.addfeat('DF:parentStart')
-    builder.addfeat('DF:parentEnd')
-    builder.addfeat('DF1:parentTypes')
-    builder.addfeat('MF:parentTypes')
-    builder.addfeat('DF1:leftTypes')
-    builder.addfeat('MF:leftTypes')
-    builder.addfeat('DF1:rightTypes')
-    builder.addfeat('MF:rightTypes')
-    builder.addfeat('DF:codeLike')
-    builder.addfeat('DF1:posTags')
-    builder.addfeat('MF:posTags')
-    builder.addfeat('DF1:words')
-    builder.addfeat('MF:words')
 
     if feats is None:
         # training
@@ -434,16 +422,18 @@ def main(argv):
         with open(feats) as fp:
             data = eval(fp.read())
         tree = builder.import_tree(data)
-        correct = 0
-        total = 0
+        correct = {}
+        refs = {}
+        pred = {}
         for e in ents:
-            total += 1
+            refs[e.key] = refs.get(e.key,0)+1
             try:
                 key = tree.test(e)
             except ValueError:
                 key = None
+            pred[key] = pred.get(key,0)+1
             if e.key == key:
-                correct += 1
+                correct[key] = correct.get(key,0)+1
             elif srcdb is not None:
                 print (key, e)
                 src = srcdb.get(e.path)
@@ -451,7 +441,10 @@ def main(argv):
                 for (_,line) in src.show(ranges):
                     print(line, end='')
                 print()
-        print ('%d/%d' % (correct, total))
+        for (k,v) in correct.items():
+            print ('%s: prec=%.3f(%d/%d), recl=%.3f(%d/%d)' %
+                   (k, v/pred[k], v, pred[k], v/refs[k], v, refs[k]))
+        print ('%d/%d' % (sum(correct.values()), sum(refs.values())))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
