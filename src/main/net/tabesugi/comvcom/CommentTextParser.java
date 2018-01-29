@@ -32,7 +32,7 @@ public class CommentTextParser {
     }
 
     public static boolean isCodeLike(String text) {
-        final String CODEPAT = ".*([=_{}%@*]|\\w\\.\\w|\\w\\().*|.*[;:]\\s*$";
+        final String CODEPAT = ".*([=_{}%@]|\\w\\.\\w|\\w\\().*|.*[;:]\\s*$";
         return text.matches(CODEPAT);
     }
 
