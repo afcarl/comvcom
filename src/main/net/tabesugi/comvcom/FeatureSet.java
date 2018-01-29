@@ -28,7 +28,11 @@ public class FeatureSet {
 	_feats.put(key, Boolean.toString(value));
     }
     public void put(String key, String value) {
-	_feats.put(key, value);
+        if (value != null) {
+            _feats.put(key, value);
+        } else{
+            _feats.remove(key);
+        }
     }
 
     public String get(String key) {

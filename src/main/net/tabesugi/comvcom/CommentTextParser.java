@@ -16,7 +16,8 @@ public class CommentTextParser {
 
     public CommentTextParser() {
 	Properties props = new Properties();
-	props.setProperty("annotators", "tokenize, ssplit, pos, parse");
+	//props.setProperty("annotators", "tokenize, ssplit, pos, parse");
+        props.setProperty("annotators", "tokenize, ssplit, pos");
 	_pipeline = new StanfordCoreNLP(props);
     }
 
@@ -38,6 +39,7 @@ public class CommentTextParser {
 
     public static String getWords(CoreMap sentence) {
 	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+        if (tokens == null) return null;
 	List<String> syms = new ArrayList<String>();
 	for (CoreLabel token : tokens) {
 	    String word = token.getString(CoreAnnotations.TextAnnotation.class);
@@ -50,6 +52,7 @@ public class CommentTextParser {
 
     public static String getPos(CoreMap sentence) {
 	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+        if (tokens == null) return null;
 	List<String> syms = new ArrayList<String>();
 	for (CoreLabel token : tokens) {
 	    String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
@@ -62,6 +65,7 @@ public class CommentTextParser {
 
     public static String flatten(CoreMap sentence, int level) {
 	Tree tree = sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+        if (tree == null) return null;
 	List<String> syms = new ArrayList<String>();
 	visit(syms, tree, level);
 	return Utils.join(",", syms);
