@@ -7,11 +7,10 @@ import java.util.*;
 public class SourceDB {
 
     public File basedir;
-    private Map<String, String> _files;
+    private Map<String, String> _files = new HashMap<String, String>();
 
     public SourceDB(String basepath) {
 	this.basedir = new File(basepath);
-        _files = new HashMap<String, String>();
     }
 
     public String getText(String name, List<Span> spans) {
@@ -40,5 +39,4 @@ public class SourceDB {
 	    return null;
 	}
     }
-
 }

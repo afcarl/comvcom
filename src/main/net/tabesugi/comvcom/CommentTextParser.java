@@ -31,6 +31,11 @@ public class CommentTextParser {
 	return sentences.get(0);
     }
 
+    public static boolean isCodeLike(String text) {
+        final String CODEPAT = ".*([=_{}%@*]|\\w\\.\\w|\\w\\().*|.*[;:]\\s*$";
+        return text.matches(CODEPAT);
+    }
+
     public static String getWords(CoreMap sentence) {
 	List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 	List<String> syms = new ArrayList<String>();
@@ -48,7 +53,9 @@ public class CommentTextParser {
 	List<String> syms = new ArrayList<String>();
 	for (CoreLabel token : tokens) {
 	    String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
-	    syms.add(pos);
+	    if (Utils.isLetter(pos)) {
+                syms.add(pos);
+            }
 	}
 	return Utils.join(",", syms);
     }
@@ -95,6 +102,7 @@ public class CommentTextParser {
 			entry.feats.put("parseLevel1", flatten(sentence, 0));
 			entry.feats.put("parseLevel2", flatten(sentence, 1));
 		    }
+                    entry.feats.put("codeLike", isCodeLike(text));
 
 		    System.out.println(entry);
 		    System.out.println();

@@ -21,5 +21,4 @@ public class Span extends Object {
     public String toString() {
         return (this.start+":"+this.end);
     }
-
 }
