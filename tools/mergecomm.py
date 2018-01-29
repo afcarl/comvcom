@@ -54,7 +54,10 @@ def main(argv):
                 if b:
                     print(merge(b))
                     b = []
-        bio = tree.test(e)
+        try:
+            bio = tree.test(e)
+        except ValueError:
+            bio = 'B'
         e['keyBIO'] = bio
         if bio == 'B':
             if b:

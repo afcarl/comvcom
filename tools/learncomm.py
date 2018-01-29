@@ -224,7 +224,7 @@ class TreeBranch:
             branch = self.children[v]
             return branch.test(e)
         except KeyError:
-            print ('Unknown value: %r in %r' % (v, e))
+            #print ('Unknown value: %r in %r' % (v, e))
             raise ValueError(v)
 
     def dump(self, depth=0):
@@ -273,6 +273,11 @@ class TreeBuilder:
         MF('leftTypes'),
         DF1('rightTypes'),
         MF('rightTypes'),
+        DF('codeLike'),
+        DF1('words'),
+        MF('words'),
+        DF1('posTags'),
+        MF('posTags'),
     ]
 
     name2feat = { feat.name: feat for feat in FEATURES }
@@ -398,10 +403,10 @@ def main(argv):
         if 'rightLine' in e:
             e['deltaRight'] = line - int(e['rightLine'])
         ents.append(e)
-    builder.addfeat('QF:deltaLine')
-    builder.addfeat('QF:deltaCols')
-    builder.addfeat('QF:deltaLeft')
-    builder.addfeat('QF:deltaRight')
+    # builder.addfeat('QF:deltaLine')
+    # builder.addfeat('QF:deltaCols')
+    # builder.addfeat('QF:deltaLeft')
+    # builder.addfeat('QF:deltaRight')
     builder.addfeat('DF:type')
     builder.addfeat('DF:parentStart')
     builder.addfeat('DF:parentEnd')
@@ -411,6 +416,11 @@ def main(argv):
     builder.addfeat('MF:leftTypes')
     builder.addfeat('DF1:rightTypes')
     builder.addfeat('MF:rightTypes')
+    builder.addfeat('DF:codeLike')
+    builder.addfeat('DF1:posTags')
+    builder.addfeat('MF:posTags')
+    builder.addfeat('DF1:words')
+    builder.addfeat('MF:words')
 
     if feats is None:
         # training
@@ -425,8 +435,13 @@ def main(argv):
             data = eval(fp.read())
         tree = builder.import_tree(data)
         correct = 0
+        total = 0
         for e in ents:
-            key = tree.test(e)
+            total += 1
+            try:
+                key = tree.test(e)
+            except ValueError:
+                key = None
             if e.key == key:
                 correct += 1
             elif srcdb is not None:
@@ -436,7 +451,7 @@ def main(argv):
                 for (_,line) in src.show(ranges):
                     print(line, end='')
                 print()
-        print ('%d/%d' % (correct, len(ents)))
+        print ('%d/%d' % (correct, total))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
