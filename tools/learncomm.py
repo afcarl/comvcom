@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 ##
-##  learn.py
+##  learncomm.py
 ##
 ##  Training:
-##    $ learn.py comments.feats > out
+##    $ learncomm.py -k prop comments.feats > out.tree
 ##  Testing:
-##    $ learn.py -B src/ -f out comments.feats
+##    $ learncomm.py -k prop -f out.tree comments.feats
 ##
 import sys
 from math import log2
 from comment import CommentEntry
-from srcdb import SourceDB
 
 
 def calcetp(values):
@@ -240,7 +239,7 @@ class TreeBranch:
             return branch.test(e)
         except KeyError:
             #print ('Unknown value: %r in %r' % (v, e))
-            raise ValueError(v)
+            raise ValueError((self.feature, v))
 
     def dump(self, depth=0):
         ind = '  '*depth
@@ -356,24 +355,23 @@ def main(argv):
     import getopt
     import fileinput
     def usage():
-        print('usage: %s [-d] [-B srcdb] [-m minkeys] [-f feats] [-k keyprop] [file ...]' %
+        print('usage: %s [-d] [-m minkeys] [-f feats] [-k keyprop] [file ...]' %
               argv[0])
         return 100
     try:
-        (opts, args) = getopt.getopt(argv[1:], 'dB:m:f:k:')
+        (opts, args) = getopt.getopt(argv[1:], 'dm:f:k:')
     except getopt.GetoptError:
         return usage()
     debug = 0
-    srcdb = None
     minkeys = 10
     feats = None
     keyprop = 'key'
     for (k, v) in opts:
         if k == '-d': debug += 1
-        elif k == '-B': srcdb = SourceDB(v)
         elif k == '-m': minkeys = int(v)
         elif k == '-f': feats = v
         elif k == '-k': keyprop = v
+
     builder = TreeBuilder(minkeys=minkeys, debug=debug)
     builder.addfeat(DF('type'))
     builder.addfeat(QF('deltaLine'))
@@ -434,16 +432,12 @@ def main(argv):
             pred[key] = pred.get(key,0)+1
             if e.key == key:
                 correct[key] = correct.get(key,0)+1
-            elif srcdb is not None:
-                print (key, e)
-                src = srcdb.get(e.path)
-                ranges = [(s,e,1) for (s,e) in e.spans]
-                for (_,line) in src.show(ranges):
-                    print(line, end='')
-                print()
         for (k,v) in correct.items():
-            print ('%s: prec=%.3f(%d/%d), recl=%.3f(%d/%d)' %
-                   (k, v/pred[k], v, pred[k], v/refs[k], v, refs[k]))
+            p = v/resp[k]
+            r = v/keys[k]
+            f = 2*(p*r)/(p+r)
+            print ('%s: prec=%.3f(%d/%d), recl=%.3f(%d/%d), F=%.3f' %
+                   (k, p, v, resp[k], r, v, keys[k], f))
         print ('%d/%d' % (sum(correct.values()), sum(refs.values())))
     return 0
 

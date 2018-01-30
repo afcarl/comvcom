@@ -155,11 +155,11 @@ class Source:
             return
         walk(tree)
         for (pos,nodes) in node_start.items():
-            nodes.sort(key=self.getlen, reverse=True)
+            nodes.sort(key=self.getlen)
             self.node_start.append((pos, nodes))
         self.node_start.sort(key=lambda x:x[0])
         for (pos,nodes) in node_end.items():
-            nodes.sort(key=self.getlen, reverse=True)
+            nodes.sort(key=self.getlen)
             self.node_end.append((pos, nodes))
         self.node_end.sort(key=lambda x:x[0])
         return

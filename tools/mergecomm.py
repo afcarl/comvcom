@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 from comment import CommentEntry
-from srcdb import SourceDB
 from learncomm import TreeBuilder, DF, QF
 
 def main(argv):
