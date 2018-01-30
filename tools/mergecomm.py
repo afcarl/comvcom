@@ -2,18 +2,18 @@
 import sys
 from comment import CommentEntry
 from srcdb import SourceDB
-from learncomm import TreeBuilder
+from learncomm import TreeBuilder, DF, QF
 
 def main(argv):
     import fileinput
     builder = TreeBuilder()
-    builder.addfeat('QF:deltaLine')
-    builder.addfeat('QF:deltaCols')
-    builder.addfeat('QF:deltaLeft')
-    builder.addfeat('QF:deltaRight')
-    builder.addfeat('DF:type')
-    builder.addfeat('DF:parentStart')
-    builder.addfeat('DF:parentEnd')
+    builder.addfeat(DF('type'))
+    builder.addfeat(QF('deltaLine'))
+    builder.addfeat(QF('deltaCols'))
+    builder.addfeat(QF('deltaLeft'))
+    builder.addfeat(QF('deltaRight'))
+    builder.addfeat(DF('parentStart'))
+    builder.addfeat(DF('parentEnd'))
 
     args = argv[1:]
     path = args.pop(0)
