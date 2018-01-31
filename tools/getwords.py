@@ -2,10 +2,12 @@
 import sys
 from comment import CommentEntry
 
-POS_IGNORED = ('DT','IN','TO','PDT','SYM')
+POS1 = frozenset('VB VBZ VBP VBD VBN VBG'.split(' '))
+POS2 = frozenset('NN NNS NNP NNPS'.split(' '))
 NTOP = 100
 
-def getstat(fp, wc):
+def getwords(fp):
+    wc = {}
     for e in CommentEntry.load(fp):
         cat = e['predCategory']
         if cat != 'p': continue
@@ -14,21 +16,23 @@ def getstat(fp, wc):
         postags = e['posTags'].split(',')
         pairs = list(zip(words, postags))
         for (i,(w1,p1)) in enumerate(pairs):
-            if p1 in POS_IGNORED: continue
+            if p1 not in POS1: continue
             for (w2,p2) in pairs[i+1:]:
-                if p2 in POS_IGNORED: continue
+                if p2 not in POS2: continue
                 k = (w1,w2)
                 wc[k] = wc.get(k, 0)+1
-    return
+    return wc
 
 def main(argv):
     args = argv[1:]
-    wc = {}
+    gwc = {}
     for path in args:
         sys.stderr.write(path+'...\n'); sys.stderr.flush()
         with open(path) as fp:
-            getstat(fp, wc)
-    a = sorted(wc.items(), key=lambda x:x[1], reverse=True)
+            wc = getwords(fp)
+        for k in wc.keys():
+            gwc[k] = gwc.get(k, 0)+1
+    a = sorted(gwc.items(), key=lambda x:x[1], reverse=True)
     for (k,n) in a[:NTOP]:
         print('#', ' '.join(k), n)
     return 0
