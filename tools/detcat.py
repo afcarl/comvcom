@@ -37,12 +37,9 @@ MAP = {
     'TryFinally': ('Block','TryStatement',),
     'Pass': ('BreakStatement',),
 }
-def pythonify(v0, rev=False):
+def pythonify(v0):
     a = []
-    r = v0.split(',')
-    if rev:
-        r.reverse()
-    for x in r:
+    for x in v0.split(','):
         a.extend(MAP.get(x,x))
     v1 = ','.join(a)
     #print (v0, v1)
@@ -85,6 +82,7 @@ def main(argv):
     builder.addfeat(DF1('rightTypes'))
     builder.addfeat(MF('rightTypes'))
     builder.addfeat(DF('codeLike'))
+    builder.addfeat(DF('empty'))
     builder.addfeat(DF1('posTags'))
     builder.addfeat(MF('posTags'))
     builder.addfeat(MF1('words'))
@@ -99,13 +97,15 @@ def main(argv):
     resp = {}
     fp = fileinput.input(args)
     for e in CommentEntry.load(fp):
+        if 'parentTypes' not in e: continue
         if pythonmode:
-            if 'parentTypes' in e:
-                e['parentTypes'] = pythonify(e['parentTypes'])
+            e['parentTypes'] = pythonify(e['parentTypes'])
             if 'leftTypes' in e:
-                e['leftTypes'] = pythonify(e['leftTypes'], True)
+                e['leftTypes'] = pythonify(e['leftTypes'])
             if 'rightTypes' in e:
-                e['rightTypes'] = pythonify(e['rightTypes'], True)
+                e['rightTypes'] = pythonify(e['rightTypes'])
+        # ignore non-local comments.
+        if 'MethodDeclaration' not in e['parentTypes'].split(','): continue
         line = int(e['line'])
         cols = int(e['cols'])
         if 'prevLine' in e:
@@ -117,18 +117,14 @@ def main(argv):
         if 'rightLine' in e:
             e['deltaRight'] = line - int(e['rightLine'])
 
-        try:
-            cat = tree.test(e)
-        except ValueError as ex:
-            #print (ex, e['leftTypes'], e['rightTypes'])
-            cat = 'u'
         key = e[keyprop]
+        cat = tree.test(e)
+        e[resprop] = cat
         if key is not None and key != 'u':
             keys[key] = keys.get(key,0)+1
             resp[cat] = resp.get(cat,0)+1
             if key == cat:
                 correct[cat] = correct.get(cat,0)+1
-        e[resprop] = cat
         print(e)
         if srcdb is not None:
             src = srcdb.get(e.path)
