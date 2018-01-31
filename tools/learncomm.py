@@ -355,6 +355,17 @@ def export_tree(tree):
     else:
         return (tree.key)
 
+def add_target_feats(builder):
+    builder.addfeat(QF('deltaLine'))
+    builder.addfeat(QF('deltaCols'))
+    builder.addfeat(QF('deltaLeft'))
+    builder.addfeat(QF('deltaRight'))
+    builder.addfeat(DF1('rightTypes'))
+    builder.addfeat(MF1('rightTypes'))
+    builder.addfeat(MF('rightTypes'))
+    builder.addfeat(MF1('words'))
+    return
+
 def add_cat_feats(builder):
     builder.addfeat(DF('type'))
     builder.addfeat(DF1('parentTypes'))
