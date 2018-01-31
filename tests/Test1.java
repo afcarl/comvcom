@@ -24,6 +24,7 @@ public class Test1 {
     // Make a string.
     private static String foo(int /*notused*/ x) { // yeah.
 	// Thsi.
-	return "ousamanomimiwarobanomimi";
+	return "ousamanomimiwa" + //
+	    "robanomimi";
     }
 }

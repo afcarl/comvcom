@@ -55,8 +55,9 @@ public class CommentTextParser {
         if (tokens == null) return null;
 	List<String> syms = new ArrayList<String>();
 	for (CoreLabel token : tokens) {
-	    String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
-	    if (Utils.isLetter(pos)) {
+	    String word = token.getString(CoreAnnotations.TextAnnotation.class);
+	    if (Utils.isLetter(word)) {
+		String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
                 syms.add(pos);
             }
 	}
@@ -107,9 +108,9 @@ public class CommentTextParser {
 			entry.feats.put("parseLevel2", flatten(sentence, 1));
 		    }
                     entry.feats.put("codeLike", isCodeLike(text));
+                    entry.feats.put("empty", Utils.isLetter(text));
 
 		    System.out.println(entry);
-		    System.out.println();
 		}
 	    }
 	}

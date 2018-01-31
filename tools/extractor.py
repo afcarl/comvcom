@@ -252,7 +252,7 @@ def main(argv):
             span = (start+1,end)
             ent = CommentEntry(path, [span], feats)
             print(ent)
-            s = src.get(start+1, end).replace('\n',' ')
-            print('+ %s\n' % s.encode('utf-8'))
+            #s = src.get(start+1, end).replace('\n',' ')
+            #print('+ %s\n' % s.encode('utf-8'))
     return
 if __name__ == '__main__': sys.exit(main(sys.argv))
