@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import sys
 from comment import CommentEntry
-from learncomm import TreeBuilder, DF, QF, DF1, MF, MF1
+from learncomm import TreeBuilder
+from learncomm import add_comm_feats
 from srcdb import SourceDB
 
 MAP = {
@@ -68,24 +69,7 @@ def main(argv):
         elif k == '-k': keyprop = v
         elif k == '-r': resprop = v
     builder = TreeBuilder()
-    builder.addfeat(DF('type'))
-    builder.addfeat(QF('deltaLine'))
-    builder.addfeat(QF('deltaCols'))
-    builder.addfeat(QF('deltaLeft'))
-    builder.addfeat(QF('deltaRight'))
-    builder.addfeat(DF('parentStart'))
-    builder.addfeat(DF('parentEnd'))
-    builder.addfeat(DF1('parentTypes'))
-    builder.addfeat(MF('parentTypes'))
-    builder.addfeat(DF1('leftTypes'))
-    builder.addfeat(MF('leftTypes'))
-    builder.addfeat(DF1('rightTypes'))
-    builder.addfeat(MF('rightTypes'))
-    builder.addfeat(DF('codeLike'))
-    builder.addfeat(DF('empty'))
-    builder.addfeat(DF1('posTags'))
-    builder.addfeat(MF('posTags'))
-    builder.addfeat(MF1('words'))
+    add_comm_feats(builder)
 
     path = args.pop(0)
     with open(path) as fp:
