@@ -89,7 +89,7 @@ def main(argv):
             if 'rightTypes' in e:
                 e['rightTypes'] = pythonify(e['rightTypes'])
         # ignore non-local comments.
-        if 'MethodDeclaration' not in e['parentTypes'].split(','): continue
+        if 'Block,MethodDeclaration' not in e['parentTypes']: continue
         line = int(e['line'])
         cols = int(e['cols'])
         if 'prevLine' in e:

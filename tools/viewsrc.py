@@ -3,40 +3,40 @@ import sys
 from comment import CommentEntry
 from srcdb import SourceDB
 
-def show(cid, src, spans, key, ncontext=4):
-    ranges = [(s,e,True) for (s,e) in spans]
-    print('# %s:' % cid)
-    print('@ %s %r key=%s' % (src.name, spans, key))
-    for (_,line) in src.show(ranges, ncontext=ncontext):
-        print('  '+line, end='')
-    print()
-    return
-
 def main(argv):
     import fileinput
     import getopt
     def usage():
-        print('usage: %s [-B basedir] [-c context] out.comm' %
+        print('usage: %s [-c context] [-f k=v] basedir out.comm' %
               argv[0])
         return 100
     try:
-        (opts, args) = getopt.getopt(argv[1:], 'B:c:')
+        (opts, args) = getopt.getopt(argv[1:], 'c:f:')
     except getopt.GetoptError:
         return usage()
-    srcdb = None
     ncontext = 4
+    filters = []
     for (k, v) in opts:
-        if k == '-B': srcdb = SourceDB(v)
-        elif k == '-c': ncontext = int(v)
+        if k == '-c': ncontext = int(v)
+        elif k == '-f':
+            (a,_,b) = v.partition('=')
+            filters.append((a,b))
     if not args: return usage()
 
+    path = args.pop(0)
+    srcdb = SourceDB(path)
+
     fp = fileinput.input(args)
-    index = 0
     for e in CommentEntry.load(fp):
-        src = srcdb.get(e.path)
-        cid = 'c%03d' % index
-        show(cid, src, e.spans, e.key, ncontext=ncontext)
-        index += 1
+        for (k,v) in filters:
+            if e[k] != v: break
+        else:
+            src = srcdb.get(e.path)
+            print('@ %s %r' % (src.name, e.spans))
+            ranges = [(s,e,True) for (s,e) in e.spans]
+            for (_,line) in src.show(ranges, ncontext=ncontext):
+                print('  '+line, end='')
+            print()
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
