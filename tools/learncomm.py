@@ -92,21 +92,23 @@ class DiscreteFeature(Feature):
 
 DF = DiscreteFeature
 
-##  DiscreteFeatureFirst
+##  DiscreteFeatureOne
 ##
-class DiscreteFeatureFirst(DiscreteFeature):
+class DiscreteFeatureOne(DiscreteFeature):
 
-    def __init__(self, attr, prefix='DF1:'):
-        DiscreteFeature.__init__(self, attr, prefix)
+    def __init__(self, attr, index=0):
+        self.index = index
+        DiscreteFeature.__init__(self, attr, 'DF%d:' % index)
         return
 
     def get(self, e):
         v = e[self.attr]
         if v is None: return None
         f = v.split(',')
-        return f[0]
+        if len(f) <= self.index: return None
+        return f[self.index]
 
-DF1 = DiscreteFeatureFirst
+DF1 = DiscreteFeatureOne
 
 ##  MembershipFeature
 ##
@@ -155,14 +157,15 @@ MF = MembershipFeature
 ##
 class MembershipFeatureOne(MembershipFeature):
 
-    def __init__(self, attr, prefix='MF1:'):
-        MembershipFeature.__init__(self, attr, prefix)
+    def __init__(self, attr, nmems=1):
+        self.nmems = nmems
+        MembershipFeature.__init__(self, attr, 'MF%d:' % nmems)
         return
 
     def get(self, e):
         v = e[self.attr]
         if v is None: return []
-        return v.split(',')[:1]
+        return v.split(',')[:self.nmems]
 
 MF1 = MembershipFeatureOne
 
