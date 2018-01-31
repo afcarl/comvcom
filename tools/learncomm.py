@@ -222,9 +222,10 @@ QF = QuantitativeFeature
 ##
 class TreeBranch:
 
-    def __init__(self, feature, arg, children):
+    def __init__(self, feature, arg, default, children):
         self.feature = feature
         self.arg = arg
+        self.default = default
         self.children = children
         return
 
@@ -238,12 +239,13 @@ class TreeBranch:
             branch = self.children[v]
             return branch.test(e)
         except KeyError:
-            #print ('Unknown value: %r in %r' % (v, e))
-            raise ValueError((self.feature, v))
+            #print ('Unknown value: %r: %r' % (self.feature, v))
+            return self.default
 
     def dump(self, depth=0):
         ind = '  '*depth
-        print ('%sBranch %r: %r' % (ind, self.feature, self.arg))
+        print ('%sBranch %r: %r, default=%r' %
+               (ind, self.feature, self.arg, self.default))
         for (v,branch) in self.children.items():
             print ('%s Value: %r ->' % (ind, v))
             branch.dump(depth+1)
@@ -286,9 +288,9 @@ class TreeBuilder:
 
     def import_tree(self, tree):
         if isinstance(tree, tuple):
-            (name, arg, children) = tree
+            (name, arg, default, children) = tree
             children = { v: self.import_tree(branch) for (v,branch) in children }
-            return TreeBranch(self.features[name], arg, children)
+            return TreeBranch(self.features[name], arg, default, children)
         else:
             return TreeLeaf(tree)
 
@@ -322,6 +324,7 @@ class TreeBuilder:
         (feat, arg, split) = minbranch
         if self.debug:
             print ('%sFeature: %r, arg=%r, etp=%.3f' % (ind, feat, arg, etp))
+        default = bestkey(keys)
         children = {}
         for (i,(v,es)) in enumerate(split):
             if 2 <= self.debug:
@@ -337,7 +340,7 @@ class TreeBuilder:
                     print ('%s Leaf: %r -> %r' % (ind, v, best))
                 branch = TreeLeaf(best)
             children[v] = branch
-        return TreeBranch(feat, arg, children)
+        return TreeBranch(feat, arg, default, children)
 
 
 # export_tree
@@ -345,7 +348,7 @@ def export_tree(tree):
     if isinstance(tree, TreeBranch):
         children = [ (v, export_tree(branch))
                      for (v,branch) in tree.children.items() ]
-        return (tree.feature.name, tree.arg, children)
+        return (tree.feature.name, tree.arg, tree.default, children)
     else:
         return (tree.key)
 
@@ -387,6 +390,7 @@ def main(argv):
     builder.addfeat(DF1('rightTypes'))
     builder.addfeat(MF('rightTypes'))
     builder.addfeat(DF('codeLike'))
+    builder.addfeat(DF('empty'))
     builder.addfeat(DF1('posTags'))
     builder.addfeat(MF('posTags'))
     builder.addfeat(MF1('words'))
@@ -421,15 +425,12 @@ def main(argv):
             data = eval(fp.read())
         tree = builder.import_tree(data)
         correct = {}
-        refs = {}
-        pred = {}
+        keys = {}
+        resp = {}
         for e in ents:
-            refs[e.key] = refs.get(e.key,0)+1
-            try:
-                key = tree.test(e)
-            except ValueError:
-                key = None
-            pred[key] = pred.get(key,0)+1
+            keys[e.key] = keys.get(e.key,0)+1
+            key = tree.test(e)
+            resp[key] = resp.get(key,0)+1
             if e.key == key:
                 correct[key] = correct.get(key,0)+1
         for (k,v) in correct.items():
@@ -438,7 +439,7 @@ def main(argv):
             f = 2*(p*r)/(p+r)
             print ('%s: prec=%.3f(%d/%d), recl=%.3f(%d/%d), F=%.3f' %
                    (k, p, v, resp[k], r, v, keys[k], f))
-        print ('%d/%d' % (sum(correct.values()), sum(refs.values())))
+        print ('%d/%d' % (sum(correct.values()), sum(keys.values())))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
