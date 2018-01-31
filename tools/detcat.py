@@ -2,7 +2,7 @@
 import sys
 from comment import CommentEntry
 from learncomm import TreeBuilder
-from learncomm import add_comm_feats
+from learncomm import add_cat_feats
 from srcdb import SourceDB
 
 MAP = {
@@ -69,7 +69,7 @@ def main(argv):
         elif k == '-k': keyprop = v
         elif k == '-r': resprop = v
     builder = TreeBuilder()
-    add_comm_feats(builder)
+    add_cat_feats(builder)
 
     path = args.pop(0)
     with open(path) as fp:

@@ -355,29 +355,19 @@ def export_tree(tree):
     else:
         return (tree.key)
 
-def add_comm_feats(builder):
+def add_cat_feats(builder):
     builder.addfeat(DF('type'))
-    builder.addfeat(QF('deltaLine'))
-    builder.addfeat(QF('deltaCols'))
-    builder.addfeat(QF('deltaLeft'))
-    builder.addfeat(QF('deltaRight'))
-    builder.addfeat(DF('parentStart'))
-    builder.addfeat(DF('parentEnd'))
     builder.addfeat(DF1('parentTypes'))
     builder.addfeat(MF1('parentTypes'))
     builder.addfeat(MF('parentTypes'))
     builder.addfeat(DF1('leftTypes'))
     builder.addfeat(MF1('leftTypes'))
     builder.addfeat(MF('leftTypes'))
-    builder.addfeat(DF1('rightTypes'))
-    builder.addfeat(MF1('rightTypes'))
-    builder.addfeat(MF('rightTypes'))
     builder.addfeat(DF('codeLike'))
     builder.addfeat(DF('empty'))
     builder.addfeat(DF1('posTags'))
     builder.addfeat(MF1('posTags'))
     builder.addfeat(MF('posTags'))
-    builder.addfeat(MF1('words'))
     return
 
 # main
@@ -403,7 +393,7 @@ def main(argv):
         elif k == '-k': keyprop = v
 
     builder = TreeBuilder(minkeys=minkeys, debug=debug)
-    add_comm_feats(builder)
+    add_cat_feats(builder)
 
     fp = fileinput.input(args)
     ents = []
