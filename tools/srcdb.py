@@ -64,6 +64,9 @@ class SourceFile:
         return ('<SourceFile(%s)>' %
                 (self.name,))
 
+    def get(self, start, end):
+        return self.data[start:end]
+
     def show_nodes(self, nodes,
                    astart=(lambda _: '['),
                    aend=(lambda _: ']'),
