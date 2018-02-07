@@ -46,6 +46,8 @@ def pythonify(v0):
     #print (v0, v1)
     return v1
 
+def Z(x): return max(1, x)
+
 def main(argv):
     import getopt
     import fileinput
@@ -76,9 +78,8 @@ def main(argv):
         data = eval(fp.read())
     tree = builder.import_tree(data)
 
-    correct = {}
-    keys = {}
-    resp = {}
+    mat = {}
+    keys = set()
     fp = fileinput.input(args)
     for e in CommentEntry.load(fp):
         if 'parentTypes' not in e: continue
@@ -101,14 +102,15 @@ def main(argv):
         if 'rightLine' in e:
             e['deltaRight'] = line - int(e['rightLine'])
 
-        key = e[keyprop]
-        cat = tree.test(e)
-        e[resprop] = cat
-        if key is not None and key != 'u':
-            keys[key] = keys.get(key,0)+1
-            resp[cat] = resp.get(cat,0)+1
-            if key == cat:
-                correct[cat] = correct.get(cat,0)+1
+        cat0 = e[keyprop]
+        assert cat0, e
+        keys.add(cat0)
+        cat1 = tree.test(e)
+        keys.add(cat1)
+        e[resprop] = cat1
+        if cat0 is not None and cat0 != 'u':
+            k = (cat0,cat1)
+            mat[k] = mat.get(k, 0)+1
         print(e)
         if srcdb is not None:
             src = srcdb.get(e.path)
@@ -118,13 +120,39 @@ def main(argv):
             print()
     #
     if debug:
-        for (k,v) in correct.items():
-            p = v/resp[k]
-            r = v/keys[k]
-            f = 2*(p*r)/(p+r)
+        #keys = sorted(keys)
+        keys = ('p','a','c','v','o','d','i')
+        print ('A\C  %s| recall' % ('|'.join( '%5s' % k for k in keys )))
+        col_t = {}
+        row_t = {}
+        for cat0 in keys:
+            a = {}
+            for cat1 in keys:
+                v = mat.get((cat0,cat1), 0)
+                a[cat1] = v
+                col_t[cat1] = col_t.get(cat1, 0)+v
+            row_c = mat.get((cat0,cat0), 0)
+            row_t1 = sum(a.values())
+            row_t[cat0] = row_t1
+            print ('%4s:%s| %.3f(%2d/%2d)' %
+                   (cat0, '|'.join( '%5d' % a[cat1] for cat1 in keys ),
+                    row_c/Z(row_t1), row_c, row_t1))
+        print ('prec.%s' %
+               ('|'.join( '%2d/%2d' % (mat.get((cat,cat), 0), col_t[cat])
+                          for cat in keys )))
+        print ('     %s' %
+               ('|'.join( '%2.3f' % (mat.get((cat,cat), 0)/Z(col_t[cat]))
+                          for cat in keys )))
+        print()
+        for cat in keys:
+            v = mat.get((cat,cat), 0)
+            p = v/Z(col_t[cat])
+            r = v/Z(row_t[cat])
+            f = 2*(p*r)/Z(p+r)
             print ('%s: prec=%.3f(%d/%d), recl=%.3f(%d/%d), F=%.3f' %
-                   (k, p, v, resp[k], r, v, keys[k], f))
-        print ('%d/%d' % (sum(correct.values()), sum(keys.values())))
+                   (cat, p, v, col_t[cat], r, v, row_t[cat], f))
+        print ('%d/%d' % (sum( v for ((cat0,cat1),v) in mat.items() if cat0 == cat1 ),
+                          sum(mat.values())))
     return 0
 
 if __name__ == '__main__': sys.exit(main(sys.argv))
